@@ -17,6 +17,7 @@
       <div class="group">Parc</div>
       @can('inventory.view')<a href="{{ route('equipments.index') }}" @class(['active' => request()->routeIs('equipments.*')])>Inventaire</a>@endcan
       <a href="{{ route('requests.index') }}" @class(['active' => request()->routeIs('requests.*')])>Demandes de matériel</a>
+      @can('inventory.view')<a href="{{ route('consumables.index') }}" @class(['active' => request()->routeIs('consumables.*')])>Consommables</a>@endcan
       @can('inventory.view')<a href="{{ route('incidents.index') }}" @class(['active' => request()->routeIs('incidents.*')])>Pannes et maintenance</a>@endcan
       @can('users.manage')
         <div class="group">Administration</div>

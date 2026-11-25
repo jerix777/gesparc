@@ -31,6 +31,7 @@ institutions ─┬─< services
               ├─< equipments ─┬─< equipment_movements   (historique complet)
               │               └─< incidents             (pannes et maintenance)
               ├─< material_requests                    (demandes de matériel et de cartouches)
+              ├─< consumables ──< consumable_movements (stock de cartouches : entrées, sorties)
               └─< audit_logs                           (journal : qui, quoi, quand, IP)
 equipment_types  (référentiel national)
 ```
@@ -45,6 +46,9 @@ equipment_types  (référentiel national)
 | `equipment_movements` | Historique | `type`, `statut_avant`, `statut_apres`, `from_user_id`, `to_user_id`, `motif`, `author_id` |
 | `incidents` | Pannes | `numero` (PAN-AAAA-NNN), `statut`, `prestataire`, `cout`, `resolution` |
 | `material_requests` | Demandes | `numero` (DEM-AAAA-NNN), `categorie` (materiel / cartouche), `materiel`, `quantite`, `statut`, `motif_refus` |
+| `consumables` | Consommables suivis en quantité | `reference` (unique par institution), `categorie`, `imprimantes_compatibles`, `stock`, `seuil_alerte` |
+| `consumable_movements` | Entrées et sorties de stock | `sens`, `quantite`, `stock_apres`, `material_request_id`, `beneficiaire_id`, `motif` |
+| `personal_access_tokens` | Jetons de l'API (Sanctum) | expirent après 30 jours, purgés chaque nuit |
 | `audit_logs` | Journal | `action`, `subject_type`, `subject_id`, `details`, `ip` |
 
 ## Cycle de vie d'un équipement
@@ -74,6 +78,7 @@ Définis dans `App\Providers\AppServiceProvider` (Gates).
 | Réformer | informaticien, responsable |
 | Déposer une demande | tout utilisateur rattaché à une institution |
 | Traiter une demande | informaticien (toutes), gestionnaire de stock (cartouches seulement) ; jamais sa propre demande |
+| Gérer les consommables (entrées, sorties, références) | informaticien, gestionnaire de stock |
 | Gérer les comptes | admin d'institution (son institution), admin national (tous) |
 | Gérer les institutions | admin national |
 
@@ -86,7 +91,17 @@ Un agent voit le matériel qui lui est affecté et peut signaler une panne dessu
 - Journal `audit_logs` sur connexions, créations, modifications, transitions et décisions.
 - En production : HTTPS obligatoire, `APP_DEBUG=false`.
 
-## API pour l'application TPI (étape 4)
+## Consommables
 
-Le module parc de l'application TPI Bouaké appellera une API JSON authentifiée par jeton (Laravel Sanctum) :
-`GET /api/equipements`, `POST /api/demandes`, `GET /api/demandes/{id}`. Elle sera ajoutée à l'étape 4.
+Le stock ne devient jamais négatif (`App\Services\ConsumableStock`, verrou de ligne pendant la mise à jour).
+Quand une demande de cartouche est accordée en choisissant la référence, la quantité sort du stock dans la même
+transaction ; si le stock est insuffisant, rien n'est enregistré et la demande reste en attente.
+
+## API et application TPI
+
+- API JSON v1 sous `/api/v1`, jetons Sanctum : voir [API.md](API.md). Les contrôleurs web et API partagent
+  les mêmes services (`MaterialRequests`, `EquipmentLifecycle`, `LoginGuard`), donc les mêmes règles.
+- Le connecteur `public/connecteur/gesparc-tpi.js` se charge dans l'application TPI. Une fois l'agent connecté,
+  les demandes de matériel passent par l'API et l'inventaire du serveur s'affiche dans « Parc informatique ».
+  Le jeton est gardé dans le navigateur (localStorage), par agent TPI.
+- Installation, sauvegardes et raccordement : [INSTALLATION.md](INSTALLATION.md).

@@ -11,6 +11,7 @@
   <div class="card"><div class="n">{{ $stats['old'] }}</div><div class="l">Équipements de plus de 5 ans</div></div>
   <div class="card"><div class="n">{{ $stats['warranty'] }}</div><div class="l">Garanties qui expirent sous 90 jours</div></div>
   <div class="card"><div class="n">{{ $stats['pending_requests'] }}</div><div class="l">Demandes en attente</div></div>
+  <div class="card"><div class="n"><a href="{{ route('consumables.index', ['alerte' => 1]) }}" style="color:inherit;text-decoration:none">{{ $stats['low_stock'] }}</a></div><div class="l">Consommables sous le seuil d'alerte</div></div>
 </div>
 
 <div class="grid cols-2">

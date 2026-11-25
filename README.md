@@ -5,11 +5,13 @@ matériel, pannes et maintenance, pour plusieurs juridictions ou administrations
 
 Né du module « Parc informatique et accessoires » de l'application de gestion du personnel du TPI de Bouaké.
 
-## Fonctionnalités (prototype)
+## Fonctionnalités
 
 - **Inventaire** : fiche complète, n° d'inventaire automatique par institution, recherche, filtres, export Excel (CSV), étiquette imprimable.
 - **Affectations et mouvements** : affectation à un agent, un service ou un bureau, transfert, restitution ; historique complet.
 - **Demandes de matériel** : dépôt par l'agent, accord ou refus motivé par le Service informatique (cartouches : gestionnaire de stock).
+- **Consommables** : cartouches et toners par institution, entrées et sorties, seuil d'alerte, sortie automatique quand une demande est accordée.
+- **API et application TPI** : API JSON par jeton ([docs/API.md](docs/API.md)) et connecteur pour l'application TPI (`public/connecteur/gesparc-tpi.js`).
 - **Pannes et maintenance** : signalement (y compris par l'agent), mise en maintenance, clôture réparé / irréparable, coût.
 - **Comptes et institutions** : 7 rôles, cloisonnement strict par institution, verrouillage après 5 échecs, journal des actions.
 - **Tableaux de bord** : par statut, par type, matériel de plus de 5 ans, garanties qui expirent, vue nationale par institution.
@@ -46,12 +48,8 @@ Les mêmes comptes existent pour le TPI d'Abidjan-Plateau avec le suffixe `.abj`
 
 ## Installation sur un serveur
 
-1. Serveur Linux avec PHP 8.3 (extensions `pdo_mysql`, `mbstring`, `intl`), MySQL 8 ou MariaDB, Nginx ou Apache pointant sur `public/`.
-2. `composer install --no-dev --optimize-autoloader`, puis renseigner `.env` (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` en https, accès MySQL).
-3. `php artisan key:generate && php artisan migrate --force --seed` (le seeder par défaut ne crée que les types d'équipement).
-4. `php artisan gesparc:create-admin admin@exemple.ci` pour créer l'administrateur national, qui crée ensuite les institutions et leurs administrateurs.
-
-Le guide complet (HTTPS, sauvegardes quotidiennes) viendra à l'étape 4.
+Guide pas à pas (Ubuntu, MariaDB, Nginx, HTTPS, sauvegardes quotidiennes, raccordement de l'application TPI) :
+[docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 ## Reprendre les données du TPI de Bouaké
 

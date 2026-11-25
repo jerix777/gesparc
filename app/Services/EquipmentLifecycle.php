@@ -61,6 +61,7 @@ class EquipmentLifecycle
                 'equipment_id' => $e->id,
                 'reported_by' => ($reporter ?? Auth::user())?->id,
                 'description' => $description,
+                'statut' => IncidentStatus::Ouvert,
             ]);
         });
     }

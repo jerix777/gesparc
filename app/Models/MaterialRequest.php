@@ -19,7 +19,7 @@ class MaterialRequest extends Model
     ];
 
     protected $fillable = [
-        'institution_id', 'numero', 'requester_id', 'categorie', 'materiel', 'quantite', 'bureau',
+        'institution_id', 'numero', 'requester_id', 'categorie', 'materiel', 'consumable_id', 'source', 'quantite', 'bureau',
         'caracteristiques', 'observations', 'statut', 'decided_by', 'decided_at', 'motif_refus',
     ];
 
@@ -31,6 +31,11 @@ class MaterialRequest extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_id');
+    }
+
+    public function consumable(): BelongsTo
+    {
+        return $this->belongsTo(Consumable::class);
     }
 
     public function decider(): BelongsTo

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EquipmentStatus;
 use App\Enums\IncidentStatus;
 use App\Enums\RequestStatus;
+use App\Models\Consumable;
 use App\Models\Equipment;
 use App\Models\Incident;
 use App\Models\Institution;
@@ -36,6 +37,7 @@ class DashboardController extends Controller
             'old' => Equipment::where('statut', '!=', EquipmentStatus::Reforme->value)->whereDate('date_acquisition', '<=', $oldThreshold)->count(),
             'warranty' => Equipment::whereBetween('fin_garantie', [now()->toDateString(), now()->addDays(90)->toDateString()])->count(),
             'pending_requests' => MaterialRequest::where('statut', RequestStatus::EnAttente->value)->count(),
+            'low_stock' => Consumable::low()->count(),
             'open_incidents' => Incident::whereIn('statut', [IncidentStatus::Ouvert->value, IncidentStatus::EnCours->value])->count(),
         ];
 

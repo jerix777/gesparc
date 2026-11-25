@@ -11,10 +11,13 @@
   <div><b>{{ $r->numero }}</b> · {{ $r->materiel }} × {{ $r->quantite }}
     <div>{{ $r->requester->name }} <span class="muted">· {{ $r->requester->fonction }} · bureau {{ $r->bureau ?: 'non renseigné' }}</span></div>
     @if($r->caracteristiques || $r->observations)<div class="muted">{{ $r->caracteristiques }} {{ $r->observations }}</div>@endif
-    <div class="muted">Déposée le {{ $r->created_at->format('d/m/Y à H:i') }}</div></div>
+    <div class="muted">Déposée le {{ $r->created_at->format('d/m/Y à H:i') }}@if($r->source === 'api') · via l'application TPI @endif</div></div>
   @can('requests.decide')
   @if ($r->requester_id !== auth()->id())
   <form method="post" action="{{ route('requests.decide', $r) }}" class="actions">@csrf
+    @if ($r->categorie === 'cartouche' && $consumables->isNotEmpty())
+    <select name="consumable_id" style="padding:6px;border:1px solid var(--line);border-radius:8px" title="Déduire du stock"><option value="">Sans sortie de stock</option>@foreach ($consumables as $c)<option value="{{ $c->id }}" @selected($r->caracteristiques && str_contains(mb_strtolower($r->caracteristiques), mb_strtolower($c->reference)))>{{ $c->reference }} (stock {{ $c->stock }})</option>@endforeach</select>
+    @endif
     <button name="decision" value="accorder" class="success small">Accorder</button>
     <input name="motif_refus" placeholder="Motif si refus" style="padding:6px;border:1px solid var(--line);border-radius:8px">
     <button name="decision" value="refuser" class="danger small">Refuser</button>

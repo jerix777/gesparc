@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ConsumableController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\IncidentController;
@@ -33,6 +34,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/pannes', [IncidentController::class, 'index'])->name('incidents.index');
     Route::post('/pannes/{incident}/maintenance', [IncidentController::class, 'maintenance'])->name('incidents.maintenance');
     Route::post('/pannes/{incident}/cloturer', [IncidentController::class, 'close'])->name('incidents.close');
+
+    Route::get('/consommables', [ConsumableController::class, 'index'])->name('consumables.index');
+    Route::post('/consommables', [ConsumableController::class, 'store'])->name('consumables.store');
+    Route::post('/consommables/{consumable}/mouvement', [ConsumableController::class, 'move'])->name('consumables.move');
 
     Route::get('/demandes', [MaterialRequestController::class, 'index'])->name('requests.index');
     Route::get('/demandes/nouvelle', [MaterialRequestController::class, 'create'])->name('requests.create');

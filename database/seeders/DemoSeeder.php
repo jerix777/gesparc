@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\EquipmentCondition;
 use App\Enums\EquipmentStatus;
 use App\Enums\Role;
+use App\Models\Consumable;
 use App\Models\Equipment;
 use App\Models\EquipmentMovement;
 use App\Models\EquipmentType;
@@ -99,6 +100,10 @@ class DemoSeeder extends Seeder
                         Incident::create(['institution_id' => $inst->id, 'numero' => 'PAN-'.now()->year.'-001', 'equipment_id' => $e->id, 'reported_by' => $agent?->id, 'description' => "L'appareil ne s'allume plus."]);
                     }
                 }
+            }
+
+            foreach ([['HP 59A', 'Toner noir HP 59A', 'toner', 'HP LaserJet Pro M404dn', 6, 2], ['Canon 057', 'Toner noir Canon 057', 'toner', 'Canon i-SENSYS MF445dw', 1, 2], ['HP 305', 'Cartouche couleur HP 305', 'cartouche', 'HP DeskJet 2710', 4, 2]] as [$ref, $des, $cat, $compat, $qte, $seuil]) {
+                Consumable::create(['institution_id' => $inst->id, 'reference' => $ref, 'designation' => $des, 'categorie' => $cat, 'imprimantes_compatibles' => $compat, 'stock' => $qte, 'seuil_alerte' => $seuil]);
             }
 
             MaterialRequest::create(['institution_id' => $inst->id, 'numero' => 'DEM-'.now()->year.'-001', 'requester_id' => $agents[0]->id, 'materiel' => 'Souris', 'quantite' => 1, 'bureau' => $agents[0]->bureau]);
