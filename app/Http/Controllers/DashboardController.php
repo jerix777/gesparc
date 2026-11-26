@@ -54,6 +54,7 @@ class DashboardController extends Controller
             'stats' => $stats,
             'perInstitution' => $perInstitution,
             'latestRequests' => MaterialRequest::with('requester')->latest()->limit(5)->get(),
+            'pendingRetirements' => Equipment::with(['type', 'retirementProposer'])->pendingRetirement()->orderBy('reforme_proposee_le')->limit(10)->get(),
             'latestIncidents' => Incident::with('equipment')->whereIn('statut', ['ouvert', 'en_cours'])->latest()->limit(5)->get(),
         ]);
     }

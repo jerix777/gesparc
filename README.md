@@ -7,8 +7,9 @@ Né du module « Parc informatique et accessoires » de l'application de gestion
 
 ## Fonctionnalités
 
-- **Inventaire** : fiche complète, n° d'inventaire automatique par institution, recherche, filtres, export Excel (CSV), étiquette imprimable.
+- **Inventaire** : fiche complète, n° d'inventaire automatique par institution, recherche, filtres, export Excel (CSV), étiquette imprimable avec QR code (ouvre la fiche au téléphone).
 - **Affectations et mouvements** : affectation à un agent, un service ou un bureau, transfert, restitution ; historique complet.
+- **Réforme en deux temps** : l'informaticien propose (ou déclare une panne irréparable), le responsable valide ou rejette.
 - **Demandes de matériel** : dépôt par l'agent, accord ou refus motivé par le Service informatique (cartouches : gestionnaire de stock).
 - **Consommables** : cartouches et toners par institution, entrées et sorties, seuil d'alerte, sortie automatique quand une demande est accordée.
 - **API et application TPI** : API JSON par jeton ([docs/API.md](docs/API.md)) et connecteur pour l'application TPI (`public/connecteur/gesparc-tpi.js`).

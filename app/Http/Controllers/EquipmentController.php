@@ -12,6 +12,10 @@ use App\Models\Service;
 use App\Models\User;
 use App\Services\EquipmentLifecycle;
 use App\Services\Numbering;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -28,7 +32,8 @@ class EquipmentController extends Controller
             ->when($request->filled('statut'), fn ($q) => $q->where('statut', $request->statut))
             ->when($request->filled('type'), fn ($q) => $q->where('equipment_type_id', $request->type))
             ->when($request->filled('service'), fn ($q) => $q->where('service_id', $request->service))
-            ->when($request->filled('institution'), fn ($q) => $q->where('equipments.institution_id', $request->institution));
+            ->when($request->filled('institution'), fn ($q) => $q->where('equipments.institution_id', $request->institution))
+            ->when($request->boolean('reforme'), fn ($q) => $q->pendingRetirement());
     }
 
     public function index(Request $request)
@@ -90,7 +95,7 @@ class EquipmentController extends Controller
     public function show(Equipment $equipment)
     {
         Gate::authorize('inventory.view');
-        $equipment->load(['type', 'service', 'assignedUser', 'movements.author', 'movements.toUser', 'movements.toService', 'incidents', 'institution']);
+        $equipment->load(['type', 'service', 'assignedUser', 'retirementProposer', 'movements.author', 'movements.toUser', 'movements.toService', 'incidents', 'institution']);
 
         return view('equipments.show', [
             'equipment' => $equipment,
@@ -121,7 +126,14 @@ class EquipmentController extends Controller
     {
         Gate::authorize('inventory.view');
 
-        return view('equipments.label', ['equipment' => $equipment->load('institution', 'type')]);
+        // Le QR code ouvre la fiche de l'équipement (après connexion) : inventaire physique au téléphone.
+        $writer = new Writer(new ImageRenderer(
+            new RendererStyle(120, 1),
+            new SvgImageBackEnd,
+        ));
+        $qr = preg_replace('/^<\?xml[^>]*>\s*/', '', $writer->writeString(route('equipments.show', $equipment)));
+
+        return view('equipments.label', ['equipment' => $equipment->load('institution', 'type'), 'qr' => $qr]);
     }
 
     // --- Transitions du cycle de vie ---------------------------------------------------------
@@ -149,13 +161,31 @@ class EquipmentController extends Controller
         return back()->with('ok', 'Équipement restitué et remis en stock.');
     }
 
-    public function retire(Request $request, Equipment $equipment)
+    public function proposeRetirement(Request $request, Equipment $equipment)
+    {
+        Gate::authorize('inventory.manage');
+        $data = $request->validate(['motif' => ['required', 'string', 'max:500']]);
+        $this->lifecycle->proposeRetirement($equipment, $data['motif']);
+
+        return back()->with('ok', 'Réforme proposée. Elle doit être validée par le responsable.');
+    }
+
+    public function approveRetirement(Request $request, Equipment $equipment)
+    {
+        Gate::authorize('inventory.retire');
+        $data = $request->validate(['commentaire' => ['nullable', 'string', 'max:500']]);
+        $this->lifecycle->approveRetirement($equipment, $data['commentaire'] ?? null);
+
+        return back()->with('ok', "Réforme de {$equipment->numero_inventaire} validée.");
+    }
+
+    public function rejectRetirement(Request $request, Equipment $equipment)
     {
         Gate::authorize('inventory.retire');
         $data = $request->validate(['motif' => ['required', 'string', 'max:500']]);
-        $this->lifecycle->retire($equipment, $data['motif']);
+        $this->lifecycle->rejectRetirement($equipment, $data['motif']);
 
-        return back()->with('ok', 'Équipement réformé.');
+        return back()->with('ok', 'Proposition de réforme rejetée.');
     }
 
     private function formData(): array

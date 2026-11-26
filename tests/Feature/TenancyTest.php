@@ -17,7 +17,7 @@ class TenancyTest extends GesParcTestCase
         $this->actingAs($info)->get('/inventaire')->assertOk()->assertSee('PC du tribunal A')->assertDontSee('PC du tribunal B');
         $this->actingAs($info)->get("/inventaire/{$mine->id}")->assertOk();
         $this->actingAs($info)->get("/inventaire/{$other->id}")->assertNotFound();
-        $this->actingAs($info)->post("/inventaire/{$other->id}/reformer", ['motif' => 'x'])->assertNotFound();
+        $this->actingAs($info)->post("/inventaire/{$other->id}/proposer-reforme", ['motif' => 'x'])->assertNotFound();
     }
 
     public function test_national_admin_and_auditor_see_all_institutions(): void
@@ -36,7 +36,7 @@ class TenancyTest extends GesParcTestCase
         $e = $this->equipment();
         $audit = $this->user(Role::Auditeur);
         $this->actingAs($audit)->get('/inventaire/create')->assertForbidden();
-        $this->actingAs($audit)->post("/inventaire/{$e->id}/reformer", ['motif' => 'x'])->assertForbidden();
+        $this->actingAs($audit)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'x'])->assertForbidden();
         $this->actingAs($audit)->get('/demandes/nouvelle')->assertForbidden();
     }
 
@@ -60,5 +60,12 @@ class TenancyTest extends GesParcTestCase
         $this->assertSame('TPI-B-00001', $e->numero_inventaire);
         $this->assertSame('en_stock', $e->statut->value);
         $this->assertSame(1, $e->movements()->count());
+    }
+
+    public function test_label_contains_qr_code_pointing_to_equipment(): void
+    {
+        $e = $this->equipment();
+        $this->actingAs($this->user(Role::Informaticien))->get("/inventaire/{$e->id}/etiquette")
+            ->assertOk()->assertSee('<svg', false)->assertSee($e->numero_inventaire);
     }
 }

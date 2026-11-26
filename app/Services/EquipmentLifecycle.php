@@ -20,8 +20,11 @@ use Illuminate\Validation\ValidationException;
  * Transitions autorisées (voir docs/ARCHITECTURE.md) :
  *   en_stock  → affecte (affectation) | reforme
  *   affecte   → affecte (transfert) | en_stock (restitution) | en_panne | reforme
- *   en_panne  → en_maintenance | en_stock (réparé) | reforme (irréparable)
- *   en_maintenance → en_stock (réparé) | reforme (irréparable)
+ *   en_panne  → en_maintenance | en_stock (réparé)
+ *   en_maintenance → en_stock (réparé)
+ *
+ * Réforme en deux temps : l'informaticien propose (ou une panne est déclarée irréparable),
+ * le responsable valide (→ reforme) ou rejette. Le statut ne change qu'à la validation.
  */
 class EquipmentLifecycle
 {
@@ -91,15 +94,46 @@ class EquipmentLifecycle
                 // Réparé : il retourne à son affectataire s'il en avait un, sinon en stock.
                 $this->apply($e, 'reparation', $e->assigned_user_id ? S::Affecte : S::EnStock, [], $resolution);
             } else {
-                $this->apply($e, 'reforme', S::Reforme, ['assigned_user_id' => null], 'Irréparable'.($resolution ? ' : '.$resolution : ''));
+                $this->proposeRetirement($e, 'Irréparable (panne '.$i->numero.')'.($resolution ? ' : '.$resolution : ''));
             }
         });
     }
 
-    public function retire(Equipment $e, string $motif): void
+    public function proposeRetirement(Equipment $e, string $motif): void
     {
         $this->guard($e, [S::EnStock, S::Affecte, S::EnPanne, S::EnMaintenance]);
+        if ($e->hasPendingRetirement()) {
+            throw ValidationException::withMessages(['statut' => 'Une proposition de réforme est déjà en attente de validation.']);
+        }
+        $this->apply($e, 'proposition_reforme', $e->statut, [
+            'reforme_motif' => $motif,
+            'reforme_proposee_par' => Auth::id(),
+            'reforme_proposee_le' => now(),
+        ], $motif);
+    }
+
+    public function approveRetirement(Equipment $e, ?string $commentaire = null): void
+    {
+        $this->guardPending($e);
+        $motif = $e->reforme_motif.($commentaire ? ' — validation : '.$commentaire : '');
         $this->apply($e, 'reforme', S::Reforme, ['assigned_user_id' => null], $motif);
+    }
+
+    public function rejectRetirement(Equipment $e, string $motif): void
+    {
+        $this->guardPending($e);
+        $this->apply($e, 'rejet_reforme', $e->statut, [
+            'reforme_motif' => null,
+            'reforme_proposee_par' => null,
+            'reforme_proposee_le' => null,
+        ], $motif);
+    }
+
+    private function guardPending(Equipment $e): void
+    {
+        if (! $e->hasPendingRetirement()) {
+            throw ValidationException::withMessages(['statut' => 'Aucune proposition de réforme en attente pour cet équipement.']);
+        }
     }
 
     public function recordReception(Equipment $e): void

@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('inventory.view', $roles(R::Informaticien, R::GestionnaireStock, R::Responsable, R::AdminInstitution, R::AdminNational, R::Auditeur));
         Gate::define('inventory.manage', $roles(R::Informaticien));
-        Gate::define('inventory.retire', $roles(R::Informaticien, R::Responsable));
+        Gate::define('inventory.retire', $roles(R::Responsable)); // valide ou rejette une réforme proposée
         Gate::define('requests.create', fn (User $u) => $u->institution_id !== null && ! $u->role->isCrossInstitution());
         Gate::define('requests.decide', $roles(R::Informaticien, R::GestionnaireStock));
         Gate::define('requests.view-all', $roles(R::Informaticien, R::GestionnaireStock, R::Responsable, R::AdminInstitution, R::AdminNational, R::Auditeur));

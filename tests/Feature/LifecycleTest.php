@@ -41,14 +41,45 @@ class LifecycleTest extends GesParcTestCase
             $e->movements()->reorder('id')->pluck('type')->all());
     }
 
-    public function test_irreparable_equipment_is_retired(): void
+    public function test_irreparable_equipment_is_proposed_then_validated_by_responsable(): void
     {
         $info = $this->user(Role::Informaticien);
+        $resp = $this->user(Role::Responsable);
         $e = $this->equipment();
         $this->actingAs($info)->post("/inventaire/{$e->id}/panne", ['description' => 'Carte mère grillée']);
         $incident = Incident::withoutGlobalScopes()->first();
         $this->actingAs($info)->post("/pannes/{$incident->id}/cloturer", ['issue' => 'irreparable']);
+
+        $e->refresh();
+        $this->assertSame(EquipmentStatus::EnPanne, $e->statut, 'Le statut ne change qu’à la validation.');
+        $this->assertTrue($e->hasPendingRetirement());
+        $this->assertSame(IncidentStatus::Irreparable, $incident->refresh()->statut);
+
+        // L'informaticien ne valide pas lui-même.
+        $this->actingAs($info)->post("/inventaire/{$e->id}/valider-reforme")->assertForbidden();
+        $this->actingAs($resp)->get('/tableau-de-bord')->assertSee('Réformes à valider');
+        $this->actingAs($resp)->post("/inventaire/{$e->id}/valider-reforme")->assertSessionHasNoErrors();
         $this->assertSame(EquipmentStatus::Reforme, $e->refresh()->statut);
+    }
+
+    public function test_responsable_can_reject_a_retirement_proposal(): void
+    {
+        $info = $this->user(Role::Informaticien);
+        $resp = $this->user(Role::Responsable);
+        $agent = $this->user(Role::Agent);
+        $e = $this->equipment();
+        $this->actingAs($info)->post("/inventaire/{$e->id}/affecter", ['to_user_id' => $agent->id]);
+
+        $this->actingAs($info)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'Trop lent'])->assertSessionHasNoErrors();
+        $this->actingAs($info)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'Encore'])->assertSessionHasErrors('statut');
+        $this->actingAs($resp)->post("/inventaire/{$e->id}/rejeter-reforme")->assertSessionHasErrors('motif');
+        $this->actingAs($resp)->post("/inventaire/{$e->id}/rejeter-reforme", ['motif' => 'Encore utilisable'])->assertSessionHasNoErrors();
+
+        $e->refresh();
+        $this->assertSame(EquipmentStatus::Affecte, $e->statut);
+        $this->assertFalse($e->hasPendingRetirement());
+        $this->assertSame($agent->id, $e->assigned_user_id);
+        $this->actingAs($resp)->post("/inventaire/{$e->id}/valider-reforme")->assertSessionHasErrors('statut');
     }
 
     public function test_invalid_transitions_are_refused(): void
@@ -57,8 +88,10 @@ class LifecycleTest extends GesParcTestCase
         $e = $this->equipment();
 
         $this->actingAs($info)->post("/inventaire/{$e->id}/restituer")->assertSessionHasErrors('statut');
-        $this->actingAs($info)->post("/inventaire/{$e->id}/reformer", ['motif' => 'Obsolète']);
+        $this->actingAs($info)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'Obsolète']);
+        $this->actingAs($this->user(Role::Responsable))->post("/inventaire/{$e->id}/valider-reforme");
         $this->actingAs($info)->post("/inventaire/{$e->id}/affecter", ['bureau' => '3'])->assertSessionHasErrors('statut');
+        $this->actingAs($info)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'x'])->assertSessionHasErrors('statut');
         $this->assertSame(EquipmentStatus::Reforme, $e->refresh()->statut);
     }
 
@@ -78,12 +111,11 @@ class LifecycleTest extends GesParcTestCase
         $this->actingAs($this->user(Role::Agent))->post("/inventaire/{$e->id}/panne", ['description' => 'x'])->assertForbidden();
     }
 
-    public function test_responsable_can_retire_but_not_edit(): void
+    public function test_responsable_validates_but_cannot_edit_or_propose(): void
     {
         $resp = $this->user(Role::Responsable);
         $e = $this->equipment();
         $this->actingAs($resp)->get("/inventaire/{$e->id}/edit")->assertForbidden();
-        $this->actingAs($resp)->post("/inventaire/{$e->id}/reformer", ['motif' => 'Obsolète'])->assertSessionHasNoErrors();
-        $this->assertSame(EquipmentStatus::Reforme, $e->refresh()->statut);
+        $this->actingAs($resp)->post("/inventaire/{$e->id}/proposer-reforme", ['motif' => 'Obsolète'])->assertForbidden();
     }
 }

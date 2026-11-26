@@ -55,11 +55,20 @@
   @endif
 @endcan
 
-@can('inventory.retire')
-  @if ($equipment->statut !== $S::Reforme)
-  <div class="panel"><details><summary>Réformer cet équipement</summary><form method="post" action="{{ route('equipments.retire', $equipment) }}" style="margin-top:10px">@csrf<div class="field"><label>Motif (obsolescence, vol, perte…) *</label><input name="motif" required></div><button class="danger">Confirmer la réforme</button></form></details></div>
-  @endif
-@endcan
+@if ($equipment->hasPendingRetirement())
+  <div class="panel" style="border-left:5px solid var(--amber)"><h2>Réforme proposée</h2>
+    <p>{{ $equipment->reforme_motif }}</p>
+    <p class="muted">Proposée par {{ $equipment->retirementProposer?->name ?? '—' }} le {{ $equipment->reforme_proposee_le->format('d/m/Y') }}. En attente de validation par le responsable.</p>
+    @can('inventory.retire')
+    <form method="post" action="{{ route('equipments.retire.approve', $equipment) }}" style="margin-bottom:10px">@csrf<div class="field"><input name="commentaire" placeholder="Commentaire (facultatif)" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px"></div><button class="danger">Valider la réforme</button></form>
+    <form method="post" action="{{ route('equipments.retire.reject', $equipment) }}" class="actions">@csrf<input name="motif" required placeholder="Motif du rejet" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px"><button class="secondary">Rejeter</button></form>
+    @endcan
+  </div>
+@elseif ($equipment->statut !== $S::Reforme)
+  @can('inventory.manage')
+  <div class="panel"><details><summary>Proposer la réforme de cet équipement</summary><form method="post" action="{{ route('equipments.retire.propose', $equipment) }}" style="margin-top:10px">@csrf<div class="field"><label>Motif (obsolescence, vol, perte…) *</label><input name="motif" required></div><button class="danger">Proposer au responsable</button></form></details></div>
+  @endcan
+@endif
 </div>
 </div>
 

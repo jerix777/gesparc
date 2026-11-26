@@ -28,7 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventaire/{equipment}/etiquette', [EquipmentController::class, 'label'])->name('equipments.label');
     Route::post('/inventaire/{equipment}/affecter', [EquipmentController::class, 'assign'])->name('equipments.assign');
     Route::post('/inventaire/{equipment}/restituer', [EquipmentController::class, 'release'])->name('equipments.release');
-    Route::post('/inventaire/{equipment}/reformer', [EquipmentController::class, 'retire'])->name('equipments.retire');
+    Route::post('/inventaire/{equipment}/proposer-reforme', [EquipmentController::class, 'proposeRetirement'])->name('equipments.retire.propose');
+    Route::post('/inventaire/{equipment}/valider-reforme', [EquipmentController::class, 'approveRetirement'])->name('equipments.retire.approve');
+    Route::post('/inventaire/{equipment}/rejeter-reforme', [EquipmentController::class, 'rejectRetirement'])->name('equipments.retire.reject');
     Route::post('/inventaire/{equipment}/panne', [IncidentController::class, 'store'])->name('incidents.store');
 
     Route::get('/pannes', [IncidentController::class, 'index'])->name('incidents.index');

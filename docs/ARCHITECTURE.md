@@ -42,7 +42,7 @@ equipment_types  (référentiel national)
 | `services` | Service interne d'une institution | `institution_id`, `nom` |
 | `users` | Comptes | `institution_id` (vide pour les rôles nationaux), `service_id`, `role`, `fonction`, `bureau`, `failed_logins`, `locked_until` |
 | `equipment_types` | Types (ordinateur, imprimante…) | `nom`, `categorie` |
-| `equipments` | Fiche équipement | `numero_inventaire` (unique par institution), `statut`, `etat`, `numero_serie`, `date_acquisition`, `prix_achat` (FCFA), `fin_garantie`, `service_id`, `bureau`, `assigned_user_id` |
+| `equipments` | Fiche équipement | `numero_inventaire` (unique par institution), `statut`, `etat`, `reforme_motif` / `reforme_proposee_par` / `reforme_proposee_le` (réforme en attente), `numero_serie`, `date_acquisition`, `prix_achat` (FCFA), `fin_garantie`, `service_id`, `bureau`, `assigned_user_id` |
 | `equipment_movements` | Historique | `type`, `statut_avant`, `statut_apres`, `from_user_id`, `to_user_id`, `motif`, `author_id` |
 | `incidents` | Pannes | `numero` (PAN-AAAA-NNN), `statut`, `prestataire`, `cout`, `resolution` |
 | `material_requests` | Demandes | `numero` (DEM-AAAA-NNN), `categorie` (materiel / cartouche), `materiel`, `quantite`, `statut`, `motif_refus` |
@@ -64,8 +64,10 @@ Toutes les transitions passent par `App\Services\EquipmentLifecycle`, qui vérif
 | En stock, Affecté | Panne signalée (crée un incident) | En panne |
 | En panne | Mise en maintenance | En maintenance |
 | En panne, En maintenance | Réparé | Affecté (s'il avait un affectataire), sinon En stock |
-| En panne, En maintenance | Irréparable | Réformé |
-| tout sauf Réformé | Réforme (motif obligatoire) | Réformé |
+| En panne, En maintenance | Irréparable | inchangé, réforme proposée |
+| tout sauf Réformé | Proposition de réforme (informaticien, motif obligatoire) | inchangé |
+| réforme proposée | Validation (responsable) | Réformé |
+| réforme proposée | Rejet (responsable, motif obligatoire) | inchangé, proposition effacée |
 
 ## Droits par rôle
 
@@ -75,7 +77,8 @@ Définis dans `App\Providers\AppServiceProvider` (Gates).
 | --- | --- |
 | Voir l'inventaire, les pannes, le tableau de bord | informaticien, gestionnaire de stock, responsable, admin d'institution, admin national, auditeur |
 | Créer / modifier un équipement, affecter, gérer les pannes | informaticien |
-| Réformer | informaticien, responsable |
+| Proposer une réforme | informaticien |
+| Valider ou rejeter une réforme | responsable |
 | Déposer une demande | tout utilisateur rattaché à une institution |
 | Traiter une demande | informaticien (toutes), gestionnaire de stock (cartouches seulement) ; jamais sa propre demande |
 | Gérer les consommables (entrées, sorties, références) | informaticien, gestionnaire de stock |

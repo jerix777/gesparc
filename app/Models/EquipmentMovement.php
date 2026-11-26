@@ -21,7 +21,9 @@ class EquipmentMovement extends Model
         'panne' => 'Panne signalée',
         'maintenance' => 'Mise en maintenance',
         'reparation' => 'Réparation',
-        'reforme' => 'Réforme',
+        'proposition_reforme' => 'Réforme proposée',
+        'rejet_reforme' => 'Proposition de réforme rejetée',
+        'reforme' => 'Réforme validée',
         'import' => 'Import',
     ];
 

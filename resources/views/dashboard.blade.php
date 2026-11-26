@@ -25,6 +25,12 @@
   </div>
 </div>
 
+@if ($pendingRetirements->isNotEmpty())
+<div class="panel" style="border-left:5px solid var(--amber)"><h2>Réformes à valider ({{ $pendingRetirements->count() }})</h2>
+@foreach ($pendingRetirements as $e)<div style="padding:6px 0;border-bottom:1px solid var(--line)"><a href="{{ route('equipments.show', $e) }}"><b>{{ $e->numero_inventaire }}</b></a> · {{ $e->designation }} <span class="muted">— proposée par {{ $e->retirementProposer?->name }} le {{ $e->reforme_proposee_le->format('d/m/Y') }}</span><div class="muted">{{ $e->reforme_motif }}</div></div>@endforeach
+</div>
+@endif
+
 @if ($perInstitution->isNotEmpty())
 <div class="panel"><h2>Par institution</h2><div class="tablewrap"><table><thead><tr><th>Institution</th><th>Ville</th><th>Équipements actifs</th><th>En panne / maintenance</th></tr></thead><tbody>
 @foreach ($perInstitution as $i)<tr><td><a href="{{ route('equipments.index', ['institution' => $i->id]) }}">{{ $i->nom }}</a></td><td>{{ $i->ville }}</td><td>{{ $i->actifs_count }}</td><td>{{ $i->pannes_count }}</td></tr>@endforeach

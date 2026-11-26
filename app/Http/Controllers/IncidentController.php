@@ -53,6 +53,6 @@ class IncidentController extends Controller
         ]);
         $this->lifecycle->closeIncident($incident, $data['issue'] === 'repare', $data['resolution'] ?? null, $data['cout'] ?? null);
 
-        return back()->with('ok', $data['issue'] === 'repare' ? 'Panne résolue.' : 'Équipement déclaré irréparable et réformé.');
+        return back()->with('ok', $data['issue'] === 'repare' ? 'Panne résolue.' : 'Panne close : équipement irréparable. La réforme est proposée au responsable.');
     }
 }
