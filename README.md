@@ -34,7 +34,7 @@ php artisan migrate --seed --seeder=DemoSeeder
 php artisan serve
 ```
 
-Ouvrez http://localhost:8000. Comptes de démonstration (mot de passe `demo2026`) :
+Ouvrez http://localhost:8000 : la page d'accueil présente GesParc et mène à la connexion. Comptes de démonstration (mot de passe `demo2026`) :
 
 | Compte | Rôle |
 | --- | --- |

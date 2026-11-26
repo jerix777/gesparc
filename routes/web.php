@@ -11,6 +11,9 @@ use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\MaterialRequestController;
 use Illuminate\Support\Facades\Route;
 
+// Page vitrine pour les visiteurs ; un utilisateur connecté est redirigé vers son espace.
+Route::get('/', [DashboardController::class, 'home'])->name('home');
+
 Route::middleware('guest')->group(function () {
     Route::get('/connexion', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/connexion', [AuthController::class, 'login'])->middleware('throttle:20,1');
@@ -18,7 +21,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/deconnexion', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/', [DashboardController::class, 'home'])->name('home');
     Route::get('/tableau-de-bord', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/mon-espace', [DashboardController::class, 'mySpace'])->name('my-space');
 

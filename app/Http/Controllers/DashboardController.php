@@ -17,6 +17,10 @@ class DashboardController extends Controller
 {
     public function home()
     {
+        if (! auth()->check()) {
+            return view('vitrine');
+        }
+
         return Gate::allows('dashboard.view') ? redirect()->route('dashboard') : redirect()->route('my-space');
     }
 

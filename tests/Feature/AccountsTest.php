@@ -51,4 +51,18 @@ class AccountsTest extends GesParcTestCase
             ->assertRedirect();
         $this->assertDatabaseHas('institutions', ['code' => 'COUR-BKE']);
     }
+
+    public function test_guest_sees_landing_page_with_login_buttons(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Tout le parc informatique')
+            ->assertSee(route('login'), false)
+            ->assertSee(route('login', ['profil' => 'informatique']), false);
+        $this->get('/connexion?profil=agent')->assertOk()->assertSee('Espace agent')->assertSee('Retour à l');
+    }
+
+    public function test_logged_in_user_skips_landing_page(): void
+    {
+        $this->actingAs($this->user(Role::Agent))->get('/')->assertRedirect(route('my-space'));
+        $this->actingAs($this->user(Role::Informaticien))->get('/')->assertRedirect(route('dashboard'));
+    }
 }
