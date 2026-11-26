@@ -53,6 +53,16 @@ Les mêmes comptes existent pour le TPI d'Abidjan-Plateau avec le suffixe `.abj`
 Guide pas à pas (Ubuntu, MariaDB, Nginx, HTTPS, sauvegardes quotidiennes, raccordement de l'application TPI) :
 [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
+## Page d'accueil (vitrine)
+
+La page publique `/` est personnalisée pour le Tribunal de Première Instance de Bouaké : bandeau de tutelle,
+carrousel de quatre diapositives et chiffres du parc calculés en direct (totaux uniquement, mis en cache 10 minutes).
+
+- Textes, nom de l'institution, contact et diapositives : `config/vitrine.php`.
+- Institution dont les chiffres sont affichés : `VITRINE_INSTITUTION` (code, ex. `TPI-BKE`) ; `VITRINE_STATISTIQUES=false` masque les chiffres.
+- Les images sont des illustrations originales (aucun droit à payer). Pour mettre vos propres photos, déposez-les dans
+  `public/images/vitrine/` et renseignez la clé `image` de la diapositive (ex. `'image' => 'palais.jpg'`).
+
 ## Reprendre les données du TPI de Bouaké
 
 Dans l'application TPI, faites une sauvegarde JSON, puis :

@@ -10,6 +10,7 @@ use App\Models\Equipment;
 use App\Models\Incident;
 use App\Models\Institution;
 use App\Models\MaterialRequest;
+use App\Support\VitrineStats;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,7 +19,7 @@ class DashboardController extends Controller
     public function home()
     {
         if (! auth()->check()) {
-            return view('vitrine');
+            return view('vitrine', ['stats' => VitrineStats::for(config('vitrine.institution'))]);
         }
 
         return Gate::allows('dashboard.view') ? redirect()->route('dashboard') : redirect()->route('my-space');

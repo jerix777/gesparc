@@ -54,10 +54,22 @@ class AccountsTest extends GesParcTestCase
 
     public function test_guest_sees_landing_page_with_login_buttons(): void
     {
-        $this->get('/')->assertOk()->assertSee('Tout le parc informatique')
+        $this->get('/')->assertOk()->assertSee('Tribunal de Première Instance de Bouaké')
+            ->assertSee('Chaque poste de travail compte')
             ->assertSee(route('login'), false)
             ->assertSee(route('login', ['profil' => 'informatique']), false);
         $this->get('/connexion?profil=agent')->assertOk()->assertSee('Espace agent')->assertSee('Retour à l');
+    }
+
+    public function test_landing_page_shows_aggregated_stats_of_configured_institution(): void
+    {
+        config(['vitrine.institution' => 'TPI-A']);
+        $this->equipment($this->a);
+        $this->equipment($this->a);
+        $this->equipment($this->b);
+        $html = $this->get('/')->assertOk()->assertSee('id="chiffres"', false)->getContent();
+        $this->assertSame(4, substr_count($html, 'aria-roledescription="diapositive"'));
+        $this->assertStringContainsString('data-count="2"', $html);
     }
 
     public function test_logged_in_user_skips_landing_page(): void
