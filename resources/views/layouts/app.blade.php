@@ -19,8 +19,12 @@
       <a href="{{ route('requests.index') }}" @class(['active' => request()->routeIs('requests.*')])>Demandes de matériel</a>
       @can('inventory.view')<a href="{{ route('consumables.index') }}" @class(['active' => request()->routeIs('consumables.*')])>Consommables</a>@endcan
       @can('inventory.view')<a href="{{ route('incidents.index') }}" @class(['active' => request()->routeIs('incidents.*')])>Pannes et maintenance</a>@endcan
-      @can('personnel.view')
+      @if ($u->staff || \Illuminate\Support\Facades\Gate::allows('personnel.view'))
         <div class="group">Personnel</div>
+        <a href="{{ route('personnel.absences.index') }}" @class(['active' => request()->routeIs('personnel.absences.*')])>Absences</a>
+        <a href="{{ route('personnel.vacations.index') }}" @class(['active' => request()->routeIs('personnel.vacations.*')])>Vacances judiciaires</a>
+      @endif
+      @can('personnel.view')
         <a href="{{ route('personnel.staff.index') }}" @class(['active' => request()->routeIs('personnel.staff.*')])>Fiches du personnel</a>
         @can('personnel.configure')<a href="{{ route('personnel.settings') }}" @class(['active' => request()->routeIs('personnel.settings')])>Paramétrage</a>@endcan
       @endcan

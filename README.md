@@ -17,6 +17,7 @@ Né du module « Parc informatique et accessoires » de l'application de gestion
 - **Comptes et institutions** : 7 rôles, cloisonnement strict par institution, verrouillage après 5 échecs, journal des actions.
 - **Courriels automatiques** : nouvelle demande ou panne au Service informatique, décision au demandeur, réforme à valider au responsable, stock bas.
 - **Tableaux de bord** : par statut, par type, matériel de plus de 5 ans, garanties qui expirent, vue nationale par institution.
+- **Personnel** : fiches, comptes par matricule, absences validées en ligne (décision avec QR code vérifiable), vacances judiciaires avec quota par service, validation du Président et listes signées.
 - **Reprise** des données de l'application TPI (`gesparc:import-tpi`).
 
 Architecture, modèle de données et droits : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -87,6 +88,9 @@ apporte les services, bureaux et dates de prise de fonction saisis depuis. La co
 créer de doublons. Les fonctions d'autorité (Président, Procureur, Greffier en Chef…) sont proposées d'après
 l'intitulé de la fonction, puis se vérifient dans Personnel > Paramétrage. **Ces fichiers contiennent des données
 personnelles : ne les ajoutez jamais au dépôt.**
+
+Les jours fériés civils et chrétiens sont calculés automatiquement ; les fêtes musulmanes (dates annoncées chaque
+année) s'ajoutent dans Personnel > Paramétrage.
 
 ## Tests
 

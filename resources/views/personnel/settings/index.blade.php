@@ -45,4 +45,15 @@
 @endforeach
 @endif
 </div>
+
+<div class="panel"><h2>Jours fériés</h2>
+<p class="muted">Exclus du décompte des jours ouvrés d’absence. Les fêtes civiles et chrétiennes se calculent ; les fêtes musulmanes (fin du Ramadan, Tabaski, Maouloud, lendemain de la Nuit du destin) se saisissent dès leur annonce officielle.</p>
+<div class="filters" style="margin-bottom:12px">
+  <form method="post" action="{{ route('personnel.holidays.store') }}" class="filters" style="margin:0">@csrf<div><input type="number" name="annee" value="{{ now()->month >= 10 ? now()->year + 1 : now()->year }}" min="2020" max="2100" style="width:110px"></div><div class="actions"><button class="secondary">Ajouter les jours calculables</button></div></form>
+  <form method="post" action="{{ route('personnel.holidays.store') }}" class="filters" style="margin:0">@csrf<div><input type="date" name="date" required></div><div><input name="libelle" required placeholder="Ex. Tabaski"></div><div class="actions"><button>Ajouter</button></div></form>
+</div>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Jour férié</th><th></th></tr></thead><tbody>
+@forelse ($holidays as $h)<tr><td>{{ $h->date->translatedFormat('l j F Y') }}</td><td>{{ $h->libelle }}</td><td><form method="post" action="{{ route('personnel.holidays.destroy', $h) }}">@csrf @method('delete')<button class="secondary small">Retirer</button></form></td></tr>
+@empty<tr><td colspan="3" class="empty">Aucun jour férié à venir.</td></tr>@endforelse
+</tbody></table></div></div>
 @endsection

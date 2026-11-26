@@ -12,10 +12,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Services\EquipmentLifecycle;
 use App\Services\Numbering;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
+use App\Support\Qr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -127,11 +124,7 @@ class EquipmentController extends Controller
         Gate::authorize('inventory.view');
 
         // Le QR code ouvre la fiche de l'équipement (après connexion) : inventaire physique au téléphone.
-        $writer = new Writer(new ImageRenderer(
-            new RendererStyle(120, 1),
-            new SvgImageBackEnd,
-        ));
-        $qr = preg_replace('/^<\?xml[^>]*>\s*/', '', $writer->writeString(route('equipments.show', $equipment)));
+        $qr = Qr::svg(route('equipments.show', $equipment));
 
         return view('equipments.label', ['equipment' => $equipment->load('institution', 'type'), 'qr' => $qr]);
     }

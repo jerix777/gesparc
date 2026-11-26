@@ -6,6 +6,7 @@ use App\Enums\Role as R;
 use App\Models\Staff;
 use App\Models\User;
 use App\Services\Personnel\Authority;
+use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Carbon::setLocale(config('app.locale')); // dates en toutes lettres en français
         Paginator::defaultView('partials.pagination');
         Paginator::defaultSimpleView('partials.pagination');
 

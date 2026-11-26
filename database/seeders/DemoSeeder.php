@@ -18,8 +18,13 @@ use App\Models\Staff;
 use App\Models\StaffCategory;
 use App\Models\StaffPosition;
 use App\Models\User;
+use App\Models\VacationCampaign;
+use App\Services\Personnel\LeaveService;
 use App\Services\Personnel\PersonnelSetup;
+use App\Services\Personnel\VacationService;
+use App\Services\Personnel\WorkingDays;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Données de démonstration. Ne pas lancer en production.
@@ -37,6 +42,9 @@ class DemoSeeder extends Seeder
 
         $bke = Institution::create(['code' => 'TPI-BKE', 'nom' => 'Tribunal de première instance de Bouaké', 'categorie' => 'Juridiction', 'ville' => 'Bouaké']);
         $abj = Institution::create(['code' => 'TPI-ABJ', 'nom' => "Tribunal de première instance d'Abidjan-Plateau", 'categorie' => 'Juridiction', 'ville' => 'Abidjan']);
+
+        WorkingDays::seed(now()->year);
+        WorkingDays::seed(now()->year + 1);
 
         foreach ([$bke, $abj] as $inst) {
             $slug = strtolower(str_replace('TPI-', '', $inst->code));
@@ -142,6 +150,26 @@ class DemoSeeder extends Seeder
             $fiche(null, 'Kacou Brou Serge', 'greffes', 'Greffe correctionnel', 'Greffier en Chef adjoint', [Position::AdjointAdministratif]);
             $fiche(null, 'Coulibaly Awa', 'contractuels', 'Greffe civil', 'Agent de saisie');
             $fiche(null, 'Gnagne Adjoua', 'magistrats_siege', 'Présidence', 'Juge');
+
+            // Absences et vacances judiciaires de démonstration (passent par les services, comme dans l'application).
+            $byName = fn ($nom) => Staff::withoutGlobalScopes()->with('positions', 'category.rules', 'service', 'user')->where('institution_id', $inst->id)->where('nom', $nom)->first();
+            $monday = now()->next('Monday');
+            Auth::login($agents[0]);
+            app(LeaveService::class)->submit($byName('Traoré'), ['motif' => 'Consultation ou rendez-vous médical', 'debut' => $monday, 'fin' => $monday->copy()->addDay()], $agents[0]);
+            Auth::login($agents[2]);
+            $l = app(LeaveService::class)->submit($byName('Kouadio'), ['motif' => 'Formation ou stage', 'debut' => $monday->copy()->addWeek(), 'fin' => $monday->copy()->addWeek()->addDays(2)], $agents[2]);
+            Auth::login($gc);
+            app(LeaveService::class)->decide($l, $gc, true);
+            $campaign = VacationCampaign::withoutGlobalScopes()->create(['institution_id' => $inst->id, 'annee' => now()->year + 1, 'mois' => VacationCampaign::MOIS, 'statut' => 'ouverte']);
+            foreach ([[$agents[0], 'Traoré', 'Août'], [$agents[2], 'Kouadio', 'Septembre'], [$info, 'Koné', 'Août']] as [$u, $nom, $mois]) {
+                Auth::login($u);
+                $req = app(VacationService::class)->request($byName($nom), $campaign, $mois, $u);
+                if ($nom === 'Kouadio') {
+                    Auth::login($gc);
+                    app(VacationService::class)->decide($req, $gc->fresh(), true, $mois, null);
+                }
+            }
+            Auth::logout();
 
             MaterialRequest::create(['institution_id' => $inst->id, 'numero' => 'DEM-'.now()->year.'-001', 'requester_id' => $agents[0]->id, 'materiel' => 'Souris', 'quantite' => 1, 'bureau' => $agents[0]->bureau]);
             MaterialRequest::create(['institution_id' => $inst->id, 'numero' => 'DEM-'.now()->year.'-002', 'requester_id' => $agents[1]->id, 'categorie' => 'cartouche', 'materiel' => 'Cartouche d’encre', 'quantite' => 2, 'caracteristiques' => 'HP 59A', 'bureau' => $agents[1]->bureau]);

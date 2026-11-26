@@ -6,10 +6,12 @@ use App\Enums\Position;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalRule;
 use App\Models\AuditLog;
+use App\Models\PublicHoliday;
 use App\Models\Staff;
 use App\Models\StaffCategory;
 use App\Models\StaffPosition;
 use App\Services\Personnel\PersonnelSetup;
+use App\Services\Personnel\WorkingDays;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -26,6 +28,7 @@ class SettingsController extends Controller
             'holders' => StaffPosition::with('staff')->get()->groupBy(fn ($p) => $p->position->value),
             'staff' => Staff::active()->orderBy('nom')->get(['id', 'nom', 'prenoms', 'fonction']),
             'institution' => $request->user()->institution,
+            'holidays' => PublicHoliday::whereYear('date', '>=', now()->year)->orderBy('date')->get(),
         ]);
     }
 
@@ -63,6 +66,30 @@ class SettingsController extends Controller
         $position->delete();
 
         return back()->with('ok', 'Fonction retirée.');
+    }
+
+    /** Jours fériés (communs à toutes les institutions) : dates calculables ou saisies (fêtes musulmanes). */
+    public function addHoliday(Request $request)
+    {
+        Gate::authorize('personnel.configure');
+        if ($request->filled('annee')) {
+            $year = (int) $request->validate(['annee' => ['integer', 'between:2020,2100']])['annee'];
+            $n = WorkingDays::seed($year);
+
+            return back()->with('ok', "{$n} jour(s) férié(s) ajouté(s) pour {$year}. Ajoutez les fêtes musulmanes dès que leur date est connue.");
+        }
+        $data = $request->validate(['date' => ['required', 'date', 'unique:public_holidays,date'], 'libelle' => ['required', 'string', 'max:120']]);
+        PublicHoliday::create($data);
+
+        return back()->with('ok', "Jour férié ajouté : {$data['libelle']}.");
+    }
+
+    public function removeHoliday(PublicHoliday $holiday)
+    {
+        Gate::authorize('personnel.configure');
+        $holiday->delete();
+
+        return back()->with('ok', 'Jour férié retiré.');
     }
 
     public function updateRule(Request $request, StaffCategory $category, string $kind)
