@@ -75,6 +75,19 @@ php artisan gesparc:import-tpi sauvegarde.json --institution=TPI-BKE
 Les équipements reçoivent un n° d'inventaire, l'état TPI est converti en statut, et l'affectation d'origine est
 rapprochée d'un agent par son nom (sinon conservée en observation). Les doublons de n° de série sont ignorés.
 
+### Fiches du personnel (module Personnel)
+
+```bash
+php artisan gesparc:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE --dry-run
+php artisan gesparc:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE
+```
+
+Le fichier HTML de l'application fournit la liste d'origine ; la sauvegarde JSON (facultative, `tpi_people`)
+apporte les services, bureaux et dates de prise de fonction saisis depuis. La commande peut être relancée sans
+créer de doublons. Les fonctions d'autorité (Président, Procureur, Greffier en Chef…) sont proposées d'après
+l'intitulé de la fonction, puis se vérifient dans Personnel > Paramétrage. **Ces fichiers contiennent des données
+personnelles : ne les ajoutez jamais au dépôt.**
+
 ## Tests
 
 Les tests se lancent en local (pas d'intégration continue sur GitHub) :

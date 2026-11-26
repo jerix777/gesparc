@@ -25,3 +25,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Données personnelles à importer : jamais dans le dépôt
+/imports/
+*.personnel.html
+GESTION_DU_PERSONNEL*.html

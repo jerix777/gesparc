@@ -13,9 +13,13 @@ class LoginGuard
 
     public const LOCK_MINUTES = 15;
 
-    public function check(string $email, string $password): User
+    /** $login : adresse e-mail ou matricule (espaces ignorés pour le matricule). */
+    public function check(string $login, string $password): User
     {
-        $user = User::where('email', $email)->first();
+        $login = trim($login);
+        $user = str_contains($login, '@')
+            ? User::where('email', $login)->first()
+            : User::whereRaw("upper(replace(replace(matricule, ' ', ''), '.', '')) = ?", [self::normalize($login)])->first();
 
         if ($user && $user->locked_until && $user->locked_until->isFuture()) {
             throw ValidationException::withMessages([
@@ -38,5 +42,10 @@ class LoginGuard
         $user->forceFill(['failed_logins' => 0, 'locked_until' => null])->save();
 
         return $user;
+    }
+
+    public static function normalize(?string $matricule): string
+    {
+        return mb_strtoupper(preg_replace('/[\s.]/u', '', (string) $matricule));
     }
 }

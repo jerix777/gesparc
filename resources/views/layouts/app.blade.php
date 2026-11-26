@@ -19,6 +19,11 @@
       <a href="{{ route('requests.index') }}" @class(['active' => request()->routeIs('requests.*')])>Demandes de matériel</a>
       @can('inventory.view')<a href="{{ route('consumables.index') }}" @class(['active' => request()->routeIs('consumables.*')])>Consommables</a>@endcan
       @can('inventory.view')<a href="{{ route('incidents.index') }}" @class(['active' => request()->routeIs('incidents.*')])>Pannes et maintenance</a>@endcan
+      @can('personnel.view')
+        <div class="group">Personnel</div>
+        <a href="{{ route('personnel.staff.index') }}" @class(['active' => request()->routeIs('personnel.staff.*')])>Fiches du personnel</a>
+        @can('personnel.configure')<a href="{{ route('personnel.settings') }}" @class(['active' => request()->routeIs('personnel.settings')])>Paramétrage</a>@endcan
+      @endcan
       @can('users.manage')
         <div class="group">Administration</div>
         @can('institutions.manage')<a href="{{ route('admin.institutions.index') }}" @class(['active' => request()->routeIs('admin.institutions.*')])>Institutions</a>@endcan
@@ -32,6 +37,7 @@
       <div><strong>{{ $u->institution?->nom ?? 'Niveau national' }}</strong></div>
       <div class="actions">
         <span>{{ $u->name }} <span class="muted">· {{ $u->role->label() }}</span></span>
+        <a class="btn secondary small" href="{{ route('password.edit') }}">Mot de passe</a>
         <form method="post" action="{{ route('logout') }}">@csrf<button class="secondary small">Déconnexion</button></form>
       </div>
     </div>

@@ -72,7 +72,7 @@ class UserController extends Controller
         Gate::authorize('users.manage');
         $this->ensureVisible($request->user(), $user);
         $temp = Str::password(12, symbols: false);
-        $user->forceFill(['password' => $temp, 'failed_logins' => 0, 'locked_until' => null])->save();
+        $user->forceFill(['password' => $temp, 'failed_logins' => 0, 'locked_until' => null, 'must_change_password' => true])->save();
         AuditLog::record('utilisateur.reinitialisation', $user, null, $user->institution_id);
 
         return back()->with('ok', "Mot de passe provisoire de {$user->name} : {$temp} — transmettez-le à l'agent.");

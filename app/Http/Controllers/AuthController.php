@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Services\LoginGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -17,7 +18,7 @@ class AuthController extends Controller
     public function login(Request $request, LoginGuard $guard)
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'max:190'], // adresse e-mail ou matricule
             'password' => ['required', 'string'],
         ]);
 
@@ -27,6 +28,24 @@ class AuthController extends Controller
         AuditLog::record('connexion');
 
         return redirect()->intended(route('home'));
+    }
+
+    public function editPassword()
+    {
+        return view('auth.password');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::min(8), 'different:current_password'],
+        ], ['password.different' => 'Le nouveau mot de passe doit être différent du mot de passe actuel.']);
+        $user->forceFill(['password' => $data['password'], 'must_change_password' => false])->save();
+        AuditLog::record('mot-de-passe.changement', $user);
+
+        return redirect()->route('home')->with('ok', 'Mot de passe modifié.');
     }
 
     public function logout(Request $request)

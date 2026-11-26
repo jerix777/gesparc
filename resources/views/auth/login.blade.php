@@ -11,7 +11,7 @@
     @php($profils = ['agent' => 'Espace agent', 'informatique' => 'Service informatique', 'administration' => 'Responsables et administrateurs'])
     <p class="sub">@if(isset($profils[request('profil')]))<b>{{ $profils[request('profil')] }}</b> · @endif Gestion du parc informatique des institutions publiques de Côte d'Ivoire</p>
     @if ($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
-    <div class="field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus></div>
+    <div class="field"><label for="email">Adresse e-mail ou matricule</label><input id="email" name="email" type="text" autocomplete="username" value="{{ old('email') }}" required autofocus></div>
     <div class="field"><label for="password">Mot de passe</label><input id="password" name="password" type="password" required></div>
     <div class="field"><label><input type="checkbox" name="remember" style="width:auto"> Rester connecté</label></div>
     <button style="width:100%">Se connecter</button>

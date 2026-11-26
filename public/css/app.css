@@ -72,3 +72,5 @@ details summary{cursor:pointer;color:var(--navy2);font-weight:600}
 .pagination .current{background:var(--navy);color:#fff;border-color:var(--navy)}
 @media(max-width:900px){.app{grid-template-columns:1fr}.side{padding:12px}.nav{display:flex;flex-wrap:wrap;gap:4px}.nav .group{display:none}.grid.cols-2,.grid.cols-3{grid-template-columns:1fr}dl.kv{grid-template-columns:1fr}}
 @media print{.side,.top,.no-print{display:none!important}.app{display:block}.panel{border:0}}
+.rule-row{display:grid;grid-template-columns:1.1fr 1.6fr 1fr 1.3fr auto;gap:10px;align-items:start;padding:8px 10px;border-bottom:1px solid var(--line)}
+@media(max-width:760px){.rule-row{grid-template-columns:1fr}}

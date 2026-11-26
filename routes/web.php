@@ -9,6 +9,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\MaterialRequestController;
+use App\Http\Controllers\Personnel\SettingsController as PersonnelSettingsController;
+use App\Http\Controllers\Personnel\StaffController;
 use Illuminate\Support\Facades\Route;
 
 // Page vitrine pour les visiteurs ; un utilisateur connecté est redirigé vers son espace.
@@ -21,6 +23,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/deconnexion', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/mot-de-passe', [AuthController::class, 'editPassword'])->name('password.edit');
+    Route::put('/mot-de-passe', [AuthController::class, 'updatePassword'])->name('password.update');
     Route::get('/tableau-de-bord', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/mon-espace', [DashboardController::class, 'mySpace'])->name('my-space');
 
@@ -47,6 +51,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/demandes/nouvelle', [MaterialRequestController::class, 'create'])->name('requests.create');
     Route::post('/demandes', [MaterialRequestController::class, 'store'])->name('requests.store');
     Route::post('/demandes/{materialRequest}/decision', [MaterialRequestController::class, 'decide'])->name('requests.decide');
+
+    // Module Personnel
+    Route::prefix('personnel')->name('personnel.')->group(function () {
+        Route::get('parametrage', [PersonnelSettingsController::class, 'index'])->name('settings');
+        Route::post('parametrage/modele', [PersonnelSettingsController::class, 'preset'])->name('preset');
+        Route::post('parametrage/fonctions', [PersonnelSettingsController::class, 'assign'])->name('positions.store');
+        Route::delete('parametrage/fonctions/{position}', [PersonnelSettingsController::class, 'unassign'])->name('positions.destroy');
+        Route::put('parametrage/regles/{category}/{kind}', [PersonnelSettingsController::class, 'updateRule'])->name('rules.update');
+        Route::post('{staff}/sortie', [StaffController::class, 'leave'])->name('staff.leave');
+        Route::post('{staff}/reintegration', [StaffController::class, 'reinstate'])->name('staff.reinstate');
+        Route::post('{staff}/compte', [StaffController::class, 'createAccount'])->name('staff.account');
+    });
+    Route::resource('personnel', StaffController::class)->parameters(['personnel' => 'staff'])->names('personnel.staff')->except('destroy');
 
     Route::prefix('administration')->name('admin.')->group(function () {
         Route::resource('institutions', InstitutionController::class)->except(['show', 'destroy']);

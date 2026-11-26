@@ -87,6 +87,25 @@ Définis dans `App\Providers\AppServiceProvider` (Gates).
 
 Un agent voit le matériel qui lui est affecté et peut signaler une panne dessus.
 
+## Module Personnel (lot 1 en cours)
+
+Tables : `staff` (fiches, reliées à `users` quand l'agent a un compte), `staff_categories`, `staff_positions`
+(fonctions d'autorité attribuées nommément), `approval_rules` (qui décide, par catégorie et type de demande :
+`first_level`, `final_level`, `copy_to`). Le modèle « juridiction » (`PersonnelSetup::applyJuridiction`) reprend
+les règles du TPI de Bouaké ; chaque institution peut les modifier dans Personnel > Paramétrage.
+
+Les droits combinent le rôle GesParc et les fonctions d'autorité (`App\Services\Personnel\Authority`) :
+
+| Droit | Qui |
+| --- | --- |
+| Voir les fiches (`personnel.view`) | admin d'institution, admin national, auditeur, Président, Procureur, Greffier en Chef et adjoints, secrétaires |
+| Créer une fiche (`personnel.create`) | admin d'institution, Président, Procureur, Greffier en Chef |
+| Modifier une fiche, ouvrir le compte, sortie (`personnel.manage`) | admin d'institution et Président : toutes ; Procureur : magistrats du parquet sauf lui-même ; Greffier en Chef : personnel non magistrat |
+| Fonctions d'autorité et règles (`personnel.configure`) | admin d'institution, admin national |
+
+Comptes : identifiant = matricule (espaces et points ignorés) ou e-mail ; mot de passe provisoire affiché une
+fois, à changer à la première connexion (`must_change_password`, middleware `EnsurePasswordChanged`).
+
 ## Sécurité
 
 - Mots de passe hachés (bcrypt) ; verrouillage 15 min après 5 échecs ; limitation à 20 tentatives/min par IP.
