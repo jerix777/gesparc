@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 /** Entrées et sorties de stock des consommables ; le stock ne devient jamais négatif. */
 class ConsumableStock
 {
+    public function __construct(private Notifier $notifier) {}
+
     public function receive(Consumable $c, int $quantite, ?string $motif = null): ConsumableMovement
     {
         return $this->move($c, 'entree', $quantite, ['motif' => $motif]);
@@ -32,7 +34,8 @@ class ConsumableStock
             throw ValidationException::withMessages(['quantite' => 'La quantité doit être au moins 1.']);
         }
 
-        return DB::transaction(function () use ($c, $sens, $quantite, $extra) {
+        $wasLow = $c->isLow();
+        $movement = DB::transaction(function () use ($c, $sens, $quantite, $extra) {
             $locked = Consumable::whereKey($c->id)->lockForUpdate()->firstOrFail();
             if ($sens === 'sortie' && $locked->stock < $quantite) {
                 throw ValidationException::withMessages([
@@ -55,5 +58,11 @@ class ConsumableStock
 
             return $m;
         });
+        // Alerte uniquement au passage sous le seuil, pas à chaque sortie.
+        if ($sens === 'sortie' && ! $wasLow && $c->isLow()) {
+            $this->notifier->lowStock($c);
+        }
+
+        return $movement;
     }
 }

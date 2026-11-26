@@ -15,7 +15,7 @@ use Illuminate\Validation\Rule;
 /** Règles des demandes de matériel, partagées par l'interface web et l'API. */
 class MaterialRequests
 {
-    public function __construct(private ConsumableStock $stock) {}
+    public function __construct(private ConsumableStock $stock, private Notifier $notifier) {}
 
     public function validateNew(Request $request): array
     {
@@ -39,6 +39,7 @@ class MaterialRequests
             'statut' => RequestStatus::EnAttente,
         ]);
         AuditLog::record('demande.creation', $req, $source === 'api' ? 'via application TPI' : null);
+        $this->notifier->newRequest($req->load('requester'));
 
         return $req;
     }
@@ -86,5 +87,6 @@ class MaterialRequests
             ]);
             AuditLog::record('demande.'.($accorder ? 'accord' : 'refus'), $req, $data['motif_refus'] ?? null);
         });
+        $this->notifier->requestDecided($req->load(['requester', 'decider']));
     }
 }

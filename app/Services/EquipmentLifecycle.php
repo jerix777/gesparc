@@ -28,6 +28,8 @@ use Illuminate\Validation\ValidationException;
  */
 class EquipmentLifecycle
 {
+    public function __construct(private Notifier $notifier) {}
+
     public function assign(Equipment $e, ?User $user, ?int $serviceId, ?string $bureau, ?string $motif = null): void
     {
         $this->guard($e, [S::EnStock, S::Affecte]);
@@ -55,7 +57,7 @@ class EquipmentLifecycle
     {
         $this->guard($e, [S::Affecte, S::EnStock]);
 
-        return DB::transaction(function () use ($e, $description, $reporter) {
+        $incident = DB::transaction(function () use ($e, $description, $reporter) {
             $this->apply($e, 'panne', S::EnPanne, [], $description);
 
             return Incident::create([
@@ -67,6 +69,9 @@ class EquipmentLifecycle
                 'statut' => IncidentStatus::Ouvert,
             ]);
         });
+        $this->notifier->incidentReported($incident->load(['equipment.service', 'reporter']));
+
+        return $incident;
     }
 
     public function startMaintenance(Incident $i, ?string $prestataire): void
@@ -110,6 +115,7 @@ class EquipmentLifecycle
             'reforme_proposee_par' => Auth::id(),
             'reforme_proposee_le' => now(),
         ], $motif);
+        $this->notifier->retirementProposed($e->load('retirementProposer'));
     }
 
     public function approveRetirement(Equipment $e, ?string $commentaire = null): void

@@ -15,6 +15,7 @@ Né du module « Parc informatique et accessoires » de l'application de gestion
 - **API et application TPI** : API JSON par jeton ([docs/API.md](docs/API.md)) et connecteur pour l'application TPI (`public/connecteur/gesparc-tpi.js`).
 - **Pannes et maintenance** : signalement (y compris par l'agent), mise en maintenance, clôture réparé / irréparable, coût.
 - **Comptes et institutions** : 7 rôles, cloisonnement strict par institution, verrouillage après 5 échecs, journal des actions.
+- **Courriels automatiques** : nouvelle demande ou panne au Service informatique, décision au demandeur, réforme à valider au responsable, stock bas.
 - **Tableaux de bord** : par statut, par type, matériel de plus de 5 ans, garanties qui expirent, vue nationale par institution.
 - **Reprise** des données de l'application TPI (`gesparc:import-tpi`).
 
@@ -66,6 +67,10 @@ rapprochée d'un agent par son nom (sinon conservée en observation). Les doublo
 
 ## Tests
 
+Les tests se lancent en local (pas d'intégration continue sur GitHub) :
+
 ```bash
 php artisan test
 ```
+
+Lancez-les avant chaque envoi sur le dépôt.

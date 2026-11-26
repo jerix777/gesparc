@@ -100,6 +100,20 @@ Le stock ne devient jamais négatif (`App\Services\ConsumableStock`, verrou de l
 Quand une demande de cartouche est accordée en choisissant la référence, la quantité sort du stock dans la même
 transaction ; si le stock est insuffisant, rien n'est enregistré et la demande reste en attente.
 
+## Courriels
+
+`App\Services\Notifier` envoie un courriel (classe `GesParcMessage`) à chaque événement :
+
+| Événement | Destinataires (même institution, comptes actifs, sauf l'auteur) |
+| --- | --- |
+| Nouvelle demande | informaticiens ; gestionnaires de stock aussi pour une cartouche |
+| Demande accordée ou refusée | le demandeur |
+| Panne signalée | informaticiens |
+| Réforme proposée | responsables |
+| Consommable passé sous le seuil | informaticiens et gestionnaires de stock |
+
+Un échec d'envoi est journalisé sans bloquer l'action. `GESPARC_NOTIFICATIONS=false` coupe tout.
+
 ## API et application TPI
 
 - API JSON v1 sous `/api/v1`, jetons Sanctum : voir [API.md](API.md). Les contrôleurs web et API partagent

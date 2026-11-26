@@ -53,6 +53,20 @@ SESSION_SECURE_COOKIE=true
 CORS_ALLOWED_ORIGINS=*
 ```
 
+Pour les courriels automatiques, indiquez le serveur de messagerie de l'administration (SMTP) :
+
+```ini
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.justice.gouv.ci
+MAIL_PORT=587
+MAIL_USERNAME=gesparc@justice.gouv.ci
+MAIL_PASSWORD=...
+MAIL_FROM_ADDRESS="gesparc@justice.gouv.ci"
+```
+
+Sans serveur SMTP, laissez `MAIL_MAILER=log` (les courriels sont écrits dans `storage/logs`) ou mettez
+`GESPARC_NOTIFICATIONS=false`. Un envoi qui échoue ne bloque jamais l'application.
+
 Puis :
 
 ```bash
