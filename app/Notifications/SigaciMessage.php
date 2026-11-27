@@ -6,8 +6,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/** Courriel GesParc générique : un objet, quelques lignes, un bouton vers la page concernée. */
-class GesParcMessage extends Notification
+/** Courriel SIGACI générique : un objet, quelques lignes, un bouton vers la page concernée. */
+class SigaciMessage extends Notification
 {
     use Queueable;
 
@@ -27,13 +27,13 @@ class GesParcMessage extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('[GesParc] '.$this->subject)
+            ->subject('[SIGACI] '.$this->subject)
             ->greeting('Bonjour '.$notifiable->name.',');
         foreach ($this->lines as $line) {
             $mail->line($line);
         }
 
         return $mail->action($this->actionText, $this->actionUrl)
-            ->salutation("— GesParc, gestion du parc informatique\nMessage automatique, merci de ne pas y répondre.");
+            ->salutation("— SIGACI, Système Intégré de Gestion et d'Administration de Côte d'Ivoire\nMessage automatique, merci de ne pas y répondre.");
     }
 }

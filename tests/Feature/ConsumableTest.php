@@ -6,7 +6,7 @@ use App\Enums\Role;
 use App\Models\Consumable;
 use App\Models\MaterialRequest;
 
-class ConsumableTest extends GesParcTestCase
+class ConsumableTest extends SigaciTestCase
 {
     public function test_stock_manager_adds_reference_receives_and_issues(): void
     {

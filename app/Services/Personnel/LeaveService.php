@@ -144,7 +144,7 @@ class LeaveService
             "Votre demande d'absence {$leave->numero} est ".($ok ? 'accordée' : 'refusée'),
             [
                 "Votre demande d'absence du {$leave->debut->format('d/m/Y')} au {$leave->fin->format('d/m/Y')} a été ".($ok ? 'accordée' : 'refusée')." par {$leave->decider_fonction}.",
-                $ok ? 'La décision est disponible dans GesParc ; vous pouvez l’imprimer.' : 'Motif : '.$leave->motif_refus,
+                $ok ? 'La décision est disponible dans SIGACI ; vous pouvez l’imprimer.' : 'Motif : '.$leave->motif_refus,
             ],
             'Voir la demande', route('personnel.absences.show', $leave),
         );

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\User;
 
-class AccountsTest extends GesParcTestCase
+class AccountsTest extends SigaciTestCase
 {
     public function test_account_locks_after_five_failed_logins(): void
     {

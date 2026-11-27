@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
  */
 class ImportPersonnel extends Command
 {
-    protected $signature = 'gesparc:import-personnel {fichiers* : Fichier HTML de l\'application et/ou sauvegarde JSON}
+    protected $signature = 'sigaci:import-personnel {fichiers* : Fichier HTML de l\'application et/ou sauvegarde JSON}
         {--institution= : Code de l\'institution cible (ex. TPI-BKE)} {--dry-run : Afficher sans enregistrer}';
 
     protected $description = "Importe les fiches du personnel de l'application TPI (Gestion du personnel)";

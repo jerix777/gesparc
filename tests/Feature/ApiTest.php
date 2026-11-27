@@ -8,7 +8,7 @@ use App\Models\Consumable;
 use App\Models\MaterialRequest;
 use Laravel\Sanctum\Sanctum;
 
-class ApiTest extends GesParcTestCase
+class ApiTest extends SigaciTestCase
 {
     public function test_token_login_and_me(): void
     {

@@ -25,7 +25,7 @@
   @if ($s->positions->isNotEmpty())<p style="margin-top:12px">Fonction(s) d'autorité : @foreach ($s->positions as $p)<span class="pill blue">{{ $p->position->label() }}</span> @endforeach</p>@endif
 </div>
 
-<div class="panel"><h2>Compte GesParc</h2>
+<div class="panel"><h2>Compte SIGACI</h2>
   @if ($s->user)
     <p>Identifiant : <b>{{ $s->user->matricule ?: $s->user->email }}</b> · {{ $s->user->active ? 'actif' : 'désactivé' }}@if($s->user->must_change_password) · <span class="pill amber">mot de passe provisoire non changé</span>@endif</p>
   @elseif ($canManage && $s->isActive())

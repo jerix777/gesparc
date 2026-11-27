@@ -1,4 +1,6 @@
-# GesParc
+# SIGACI
+
+**Système Intégré de Gestion et d'Administration de Côte d'Ivoire** (anciennement GesParc).
 
 Gestion du parc informatique des institutions publiques de Côte d'Ivoire : inventaire, affectations, demandes de
 matériel, pannes et maintenance, pour plusieurs juridictions ou administrations sur un même serveur.
@@ -12,15 +14,22 @@ Né du module « Parc informatique et accessoires » de l'application de gestion
 - **Réforme en deux temps** : l'informaticien propose (ou déclare une panne irréparable), le responsable valide ou rejette.
 - **Demandes de matériel** : dépôt par l'agent, accord ou refus motivé par le Service informatique (cartouches : gestionnaire de stock).
 - **Consommables** : cartouches et toners par institution, entrées et sorties, seuil d'alerte, sortie automatique quand une demande est accordée.
-- **API et application TPI** : API JSON par jeton ([docs/API.md](docs/API.md)) et connecteur pour l'application TPI (`public/connecteur/gesparc-tpi.js`).
+- **API et application TPI** : API JSON par jeton ([docs/API.md](docs/API.md)) et connecteur pour l'application TPI (`public/connecteur/sigaci-tpi.js`).
 - **Pannes et maintenance** : signalement (y compris par l'agent), mise en maintenance, clôture réparé / irréparable, coût.
 - **Comptes et institutions** : 7 rôles, cloisonnement strict par institution, verrouillage après 5 échecs, journal des actions.
 - **Courriels automatiques** : nouvelle demande ou panne au Service informatique, décision au demandeur, réforme à valider au responsable, stock bas.
 - **Tableaux de bord** : par statut, par type, matériel de plus de 5 ans, garanties qui expirent, vue nationale par institution.
 - **Personnel** : fiches, comptes par matricule, absences validées en ligne (décision avec QR code vérifiable), vacances judiciaires avec quota par service, validation du Président et listes signées.
-- **Reprise** des données de l'application TPI (`gesparc:import-tpi`).
+- **Reprise** des données de l'application TPI (`sigaci:import-tpi`).
 
 Architecture, modèle de données et droits : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Interface
+
+L'habillage reprend celui de l'application « Gestion du personnel – TPI de Bouaké » : couleurs du drapeau
+(orange `#F77F00`, blanc, vert `#009E60`), menu latéral vert, filet tricolore, cartes et tableaux arrondis
+(`public/css/app.css`). Le ministère affiché en haut des pages et le bandeau « Information » se règlent dans
+`config/sigaci.php` (variables `SIGACI_TUTELLE` et `SIGACI_INFORMATION` du fichier `.env`).
 
 ## Démarrer en local
 
@@ -35,17 +44,17 @@ php artisan migrate --seed --seeder=DemoSeeder
 php artisan serve
 ```
 
-Ouvrez http://localhost:8000 : la page d'accueil présente GesParc et mène à la connexion. Comptes de démonstration (mot de passe `demo2026`) :
+Ouvrez http://localhost:8000 : la page d'accueil présente SIGACI et mène à la connexion. Comptes de démonstration (mot de passe `demo2026`) :
 
 | Compte | Rôle |
 | --- | --- |
-| national@gesparc.test | Administrateur national |
-| audit@gesparc.test | Auditeur |
-| admin.bke@gesparc.test | Administrateur du TPI de Bouaké |
-| info.bke@gesparc.test | Informaticien du TPI de Bouaké |
-| stock.bke@gesparc.test | Gestionnaire de stock |
-| president.bke@gesparc.test | Responsable (président) |
-| agent.bke@gesparc.test | Agent (greffière) |
+| national@sigaci.test | Administrateur national |
+| audit@sigaci.test | Auditeur |
+| admin.bke@sigaci.test | Administrateur du TPI de Bouaké |
+| info.bke@sigaci.test | Informaticien du TPI de Bouaké |
+| stock.bke@sigaci.test | Gestionnaire de stock |
+| president.bke@sigaci.test | Responsable (président) |
+| agent.bke@sigaci.test | Agent (greffière) |
 
 Les mêmes comptes existent pour le TPI d'Abidjan-Plateau avec le suffixe `.abj`.
 
@@ -69,8 +78,8 @@ carrousel de quatre diapositives et chiffres du parc calculés en direct (totaux
 Dans l'application TPI, faites une sauvegarde JSON, puis :
 
 ```bash
-php artisan gesparc:import-tpi sauvegarde.json --institution=TPI-BKE --dry-run   # simulation
-php artisan gesparc:import-tpi sauvegarde.json --institution=TPI-BKE
+php artisan sigaci:import-tpi sauvegarde.json --institution=TPI-BKE --dry-run   # simulation
+php artisan sigaci:import-tpi sauvegarde.json --institution=TPI-BKE
 ```
 
 Les équipements reçoivent un n° d'inventaire, l'état TPI est converti en statut, et l'affectation d'origine est
@@ -79,8 +88,8 @@ rapprochée d'un agent par son nom (sinon conservée en observation). Les doublo
 ### Fiches du personnel (module Personnel)
 
 ```bash
-php artisan gesparc:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE --dry-run
-php artisan gesparc:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE
+php artisan sigaci:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE --dry-run
+php artisan sigaci:import-personnel GESTION_DU_PERSONNEL.html sauvegarde.json --institution=TPI-BKE
 ```
 
 Le fichier HTML de l'application fournit la liste d'origine ; la sauvegarde JSON (facultative, `tpi_people`)

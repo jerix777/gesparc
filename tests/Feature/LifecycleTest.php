@@ -7,7 +7,7 @@ use App\Enums\IncidentStatus;
 use App\Enums\Role;
 use App\Models\Incident;
 
-class LifecycleTest extends GesParcTestCase
+class LifecycleTest extends SigaciTestCase
 {
     public function test_full_cycle_assign_failure_repair(): void
     {

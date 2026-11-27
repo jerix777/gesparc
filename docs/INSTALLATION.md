@@ -1,6 +1,6 @@
-# Installer GesParc sur un serveur
+# Installer SIGACI sur un serveur
 
-Ce guide installe GesParc sur un serveur Linux Ubuntu 24.04, avec MariaDB, Nginx et HTTPS.
+Ce guide installe SIGACI sur un serveur Linux Ubuntu 24.04, avec MariaDB, Nginx et HTTPS.
 Comptez environ une heure. Les commandes sont à lancer en `root` (ou avec `sudo`).
 
 ## 1. Serveur conseillé
@@ -10,7 +10,7 @@ Comptez environ une heure. Les commandes sont à lancer en `root` (ou avec `sudo
 | Une juridiction (pilote) | 2 cœurs | 2 Go | 20 Go |
 | Jusqu'à 50 institutions | 4 cœurs | 8 Go | 100 Go |
 
-Le serveur doit avoir un nom de domaine (ex. `gesparc.justice.gouv.ci`) pointant vers son adresse IP.
+Le serveur doit avoir un nom de domaine (ex. `sigaci.justice.gouv.ci`) pointant vers son adresse IP.
 Une adresse sur le réseau interne de l'administration convient aussi ; il faut alors un certificat interne.
 
 ## 2. Logiciels
@@ -26,16 +26,16 @@ mysql_secure_installation
 ## 3. Base de données
 
 ```bash
-mysql -e "CREATE DATABASE gesparc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'gesparc'@'localhost' IDENTIFIED BY 'UN-MOT-DE-PASSE-LONG';
-GRANT ALL PRIVILEGES ON gesparc.* TO 'gesparc'@'localhost'; FLUSH PRIVILEGES;"
+mysql -e "CREATE DATABASE sigaci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'sigaci'@'localhost' IDENTIFIED BY 'UN-MOT-DE-PASSE-LONG';
+GRANT ALL PRIVILEGES ON sigaci.* TO 'sigaci'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
 ## 4. Application
 
 ```bash
-git clone https://github.com/jerix777/gesparc.git /var/www/gesparc
-cd /var/www/gesparc
+git clone https://github.com/jerix777/gesparc.git /var/www/sigaci
+cd /var/www/sigaci
 composer install --no-dev --optimize-autoloader
 cp .env.example .env
 php artisan key:generate
@@ -46,7 +46,7 @@ Dans `.env`, renseignez :
 ```ini
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://gesparc.justice.gouv.ci
+APP_URL=https://sigaci.justice.gouv.ci
 DB_PASSWORD=UN-MOT-DE-PASSE-LONG
 SESSION_SECURE_COOKIE=true
 # Adresse(s) d'où l'application TPI appelle l'API ; * si elle est ouverte comme fichier local
@@ -59,19 +59,19 @@ Pour les courriels automatiques, indiquez le serveur de messagerie de l'administ
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.justice.gouv.ci
 MAIL_PORT=587
-MAIL_USERNAME=gesparc@justice.gouv.ci
+MAIL_USERNAME=sigaci@justice.gouv.ci
 MAIL_PASSWORD=...
-MAIL_FROM_ADDRESS="gesparc@justice.gouv.ci"
+MAIL_FROM_ADDRESS="sigaci@justice.gouv.ci"
 ```
 
 Sans serveur SMTP, laissez `MAIL_MAILER=log` (les courriels sont écrits dans `storage/logs`) ou mettez
-`GESPARC_NOTIFICATIONS=false`. Un envoi qui échoue ne bloque jamais l'application.
+`SIGACI_NOTIFICATIONS=false`. Un envoi qui échoue ne bloque jamais l'application.
 
 Puis :
 
 ```bash
 php artisan migrate --force --seed          # crée les tables et les types d'équipement
-php artisan gesparc:create-admin admin@justice.gouv.ci --name="Direction informatique"
+php artisan sigaci:create-admin admin@justice.gouv.ci --name="Direction informatique"
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 chown -R www-data:www-data storage bootstrap/cache
 ```
@@ -79,28 +79,28 @@ chown -R www-data:www-data storage bootstrap/cache
 ## 5. Nginx et HTTPS
 
 ```bash
-cp deploiement/nginx-gesparc.conf /etc/nginx/sites-available/gesparc
-# remplacez gesparc.exemple.ci par votre domaine dans le fichier, puis :
-ln -s /etc/nginx/sites-available/gesparc /etc/nginx/sites-enabled/
-certbot --nginx -d gesparc.justice.gouv.ci
+cp deploiement/nginx-sigaci.conf /etc/nginx/sites-available/sigaci
+# remplacez sigaci.exemple.ci par votre domaine dans le fichier, puis :
+ln -s /etc/nginx/sites-available/sigaci /etc/nginx/sites-enabled/
+certbot --nginx -d sigaci.justice.gouv.ci
 nginx -t && systemctl reload nginx
 ```
 
 ## 6. Tâches planifiées et sauvegardes
 
 ```bash
-cp deploiement/sauvegarde.sh /usr/local/bin/gesparc-sauvegarde && chmod 700 /usr/local/bin/gesparc-sauvegarde
+cp deploiement/sauvegarde.sh /usr/local/bin/sigaci-sauvegarde && chmod 700 /usr/local/bin/sigaci-sauvegarde
 crontab -e
 ```
 
 Ajoutez :
 
 ```cron
-* * * * *  cd /var/www/gesparc && php artisan schedule:run >> /dev/null 2>&1
-30 2 * * * REMOTE=sauvegarde@10.0.0.20:/srv/sauvegardes/gesparc /usr/local/bin/gesparc-sauvegarde >> /var/log/gesparc-sauvegarde.log 2>&1
+* * * * *  cd /var/www/sigaci && php artisan schedule:run >> /dev/null 2>&1
+30 2 * * * REMOTE=sauvegarde@10.0.0.20:/srv/sauvegardes/sigaci /usr/local/bin/sigaci-sauvegarde >> /var/log/sigaci-sauvegarde.log 2>&1
 ```
 
-- Une copie de la base et du fichier `.env` est faite chaque nuit à 2 h 30 dans `/var/backups/gesparc`, gardée 30 jours.
+- Une copie de la base et du fichier `.env` est faite chaque nuit à 2 h 30 dans `/var/backups/sigaci`, gardée 30 jours.
 - `REMOTE` copie aussi les sauvegardes sur un second serveur (recommandé ; laissez vide sinon).
 - **Testez une restauration chaque trimestre** sur un serveur de test : `deploiement/restauration.sh <fichier>`.
 
@@ -115,22 +115,22 @@ Ajoutez :
 
 Deux possibilités :
 
-- **Fichier prêt à l'emploi** : utilisez `tpi.gesparc.connecte.html`, copie de l'application TPI qui contient déjà le connecteur.
-  Pour éviter que chaque agent saisisse l'adresse du serveur, remplacez dans ce fichier `window.GESPARC_URL || ""` par `window.GESPARC_URL || "https://gesparc.justice.gouv.ci"`.
+- **Fichier prêt à l'emploi** : utilisez `tpi.sigaci.connecte.html`, copie de l'application TPI qui contient déjà le connecteur.
+  Pour éviter que chaque agent saisisse l'adresse du serveur, remplacez dans ce fichier `window.SIGACI_URL || ""` par `window.SIGACI_URL || "https://sigaci.justice.gouv.ci"`.
 - **Ajout manuel** : juste avant `</body>` de l'application TPI, ajoutez
   ```html
-  <script>window.GESPARC_URL = 'https://gesparc.justice.gouv.ci';</script>
-  <script src="https://gesparc.justice.gouv.ci/connecteur/gesparc-tpi.js"></script>
+  <script>window.SIGACI_URL = 'https://sigaci.justice.gouv.ci';</script>
+  <script src="https://sigaci.justice.gouv.ci/connecteur/sigaci-tpi.js"></script>
   ```
 
-Chaque agent clique ensuite sur « Demande de matériels informatiques » et se connecte une fois avec son compte GesParc.
+Chaque agent clique ensuite sur « Demande de matériels informatiques » et se connecte une fois avec son compte SIGACI.
 Ses demandes partent alors sur le serveur. Sans connexion, l'application TPI fonctionne comme avant.
 
 ## 9. Mettre à jour
 
 ```bash
-cd /var/www/gesparc
-/usr/local/bin/gesparc-sauvegarde
+cd /var/www/sigaci
+/usr/local/bin/sigaci-sauvegarde
 php artisan down
 git pull && composer install --no-dev --optimize-autoloader
 php artisan migrate --force

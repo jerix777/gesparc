@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportTpi extends Command
 {
-    protected $signature = 'gesparc:import-tpi {fichier : Chemin du fichier JSON} {--institution= : Code de l\'institution cible} {--dry-run : Afficher sans enregistrer}';
+    protected $signature = 'sigaci:import-tpi {fichier : Chemin du fichier JSON} {--institution= : Code de l\'institution cible} {--dry-run : Afficher sans enregistrer}';
 
     protected $description = "Importe l'inventaire du module parc informatique de l'application TPI (localStorage)";
 

@@ -37,8 +37,8 @@ class DemoSeeder extends Seeder
         $this->call(DatabaseSeeder::class);
         $pwd = 'demo2026';
 
-        User::create(['name' => 'Administrateur national', 'email' => 'national@gesparc.test', 'password' => $pwd, 'role' => Role::AdminNational]);
-        User::create(['name' => 'Inspection générale', 'email' => 'audit@gesparc.test', 'password' => $pwd, 'role' => Role::Auditeur]);
+        User::create(['name' => 'Administrateur national', 'email' => 'national@sigaci.test', 'password' => $pwd, 'role' => Role::AdminNational]);
+        User::create(['name' => 'Inspection générale', 'email' => 'audit@sigaci.test', 'password' => $pwd, 'role' => Role::Auditeur]);
 
         $bke = Institution::create(['code' => 'TPI-BKE', 'nom' => 'Tribunal de première instance de Bouaké', 'categorie' => 'Juridiction', 'ville' => 'Bouaké']);
         $abj = Institution::create(['code' => 'TPI-ABJ', 'nom' => "Tribunal de première instance d'Abidjan-Plateau", 'categorie' => 'Juridiction', 'ville' => 'Abidjan']);
@@ -53,7 +53,7 @@ class DemoSeeder extends Seeder
 
             $mk = fn ($name, $email, Role $role, $service, $fonction, $bureau) => User::create([
                 'institution_id' => $inst->id, 'service_id' => $services[$service]->id, 'name' => $name,
-                'email' => "{$email}.{$slug}@gesparc.test", 'password' => $pwd, 'role' => $role,
+                'email' => "{$email}.{$slug}@sigaci.test", 'password' => $pwd, 'role' => $role,
                 'fonction' => $fonction, 'bureau' => $bureau,
             ]);
 

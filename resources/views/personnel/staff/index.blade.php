@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Personnel')
 @section('content')
-<div class="pagehead"><div><h1>Personnel</h1><div class="sub">{{ $staff->total() }} fiche(s) · effectif actif : {{ $counts->sum() }}</div></div>
+<div class="pagehead"><div><h1>Répertoire du personnel</h1><div class="sub">{{ $staff->total() }} fiche(s) · effectif actif : {{ $counts->sum() }}</div></div>
   <div class="actions">@can('personnel.configure')<a class="btn secondary" href="{{ route('personnel.settings') }}">Paramétrage</a>@endcan
   @can('personnel.create')<a class="btn" href="{{ route('personnel.staff.create') }}">+ Nouvelle fiche</a>@endcan</div></div>
 
@@ -25,6 +25,6 @@
   <td>@if ($s->service){{ $s->service->nom }}@else<span class="pill amber">À renseigner</span>@endif</td>
   <td>@foreach ($s->positions as $p)<span class="pill blue">{{ $p->position->label() }}</span> @endforeach</td>
   <td>@if (! $s->isActive())<span class="pill grey">Sorti</span>@elseif ($s->user)<span class="pill green">Ouvert</span>@else<span class="muted">—</span>@endif</td></tr>
-@empty<tr><td colspan="6" class="empty">Aucune fiche ne correspond. @can('personnel.configure')Importez le personnel avec la commande <code>gesparc:import-personnel</code> (voir la documentation).@endcan</td></tr>@endforelse
+@empty<tr><td colspan="6" class="empty">Aucune fiche ne correspond. @can('personnel.configure')Importez le personnel avec la commande <code>sigaci:import-personnel</code> (voir la documentation).@endcan</td></tr>@endforelse
 </tbody></table>{{ $staff->links() }}</div>
 @endsection

@@ -21,7 +21,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /** Circuits du lot 1 : absences (validation électronique) et vacances judiciaires (validation du Président). */
-class PersonnelCircuitsTest extends GesParcTestCase
+class PersonnelCircuitsTest extends SigaciTestCase
 {
     private Service $greffe;
 

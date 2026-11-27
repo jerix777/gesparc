@@ -1,12 +1,12 @@
 /*!
- * Connecteur GesParc pour l'application « Gestion du personnel – TPI ».
+ * Connecteur SIGACI pour l'application « Gestion du personnel – TPI ».
  *
  * À charger APRÈS le script principal de l'application TPI :
- *   <script>window.GESPARC_URL = 'https://gesparc.exemple.ci';<\/script>
- *   <script src="https://gesparc.exemple.ci/connecteur/gesparc-tpi.js"><\/script>
+ *   <script>window.SIGACI_URL = 'https://sigaci.exemple.ci';<\/script>
+ *   <script src="https://sigaci.exemple.ci/connecteur/sigaci-tpi.js"><\/script>
  *
- * Effets, une fois l'agent connecté à GesParc (une fois par poste, jeton valable 30 jours) :
- *  - « Demande de matériels informatiques » : les demandes partent sur le serveur GesParc (plus dans le navigateur),
+ * Effets, une fois l'agent connecté à SIGACI (une fois par poste, jeton valable 30 jours) :
+ *  - « Demande de matériels informatiques » : les demandes partent sur le serveur SIGACI (plus dans le navigateur),
  *    l'agent voit le matériel qui lui est affecté et peut signaler une panne ;
  *    le Service informatique traite les demandes de toutes les juridictions depuis le serveur.
  *  - « Parc informatique et accessoires » : l'inventaire du serveur s'affiche en tête de page.
@@ -15,11 +15,11 @@
 (function () {
   'use strict';
 
-  var KEY = 'gesparc_connexions';
+  var KEY = 'sigaci_connexions';
   var origMatRender = window.matRender;
   var origModRender = window.modRender;
   if (typeof origMatRender !== 'function') {
-    console.warn('[GesParc] matRender introuvable : connecteur inactif.');
+    console.warn('[SIGACI] matRender introuvable : connecteur inactif.');
     return;
   }
 
@@ -49,7 +49,7 @@
     var s = store(); delete s[agentId()]; saveStore(s);
   }
   function serverUrl() {
-    return (window.GESPARC_URL || (session() || {}).url || '').replace(/\/+$/, '');
+    return (window.SIGACI_URL || (session() || {}).url || '').replace(/\/+$/, '');
   }
   function api(method, path, body) {
     var s = session();
@@ -58,7 +58,7 @@
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.jeton },
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
-      if (r.status === 401) { forget(); rerender(); throw new Error('Session GesParc expirée : reconnectez-vous.'); }
+      if (r.status === 401) { forget(); rerender(); throw new Error('Session SIGACI expirée : reconnectez-vous.'); }
       if (r.status === 204) return null;
       return r.json().then(function (j) {
         if (!r.ok) {
@@ -89,19 +89,19 @@
   // --- Connexion ----------------------------------------------------------------------------
   function loginPanel() {
     var url = serverUrl();
-    return '<div class="panel" style="border-left:5px solid #c5a45b"><h2>Serveur GesParc</h2>' +
-      '<p class="sub">Connectez-vous une fois avec votre compte GesParc : vos demandes seront transmises au serveur central du parc informatique.</p>' +
+    return '<div class="panel" style="border-left:5px solid #c5a45b"><h2>Serveur SIGACI</h2>' +
+      '<p class="sub">Connectez-vous une fois avec votre compte SIGACI : vos demandes seront transmises au serveur central du parc informatique.</p>' +
       '<div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">' +
-      (window.GESPARC_URL ? '' : '<div class="field"><label>Adresse du serveur</label><input id="gp_url" placeholder="https://gesparc.exemple.ci" value="' + h(url) + '"></div>') +
-      '<div class="field"><label>E-mail GesParc</label><input id="gp_email" type="email"></div>' +
+      (window.SIGACI_URL ? '' : '<div class="field"><label>Adresse du serveur</label><input id="gp_url" placeholder="https://sigaci.exemple.ci" value="' + h(url) + '"></div>') +
+      '<div class="field"><label>E-mail SIGACI</label><input id="gp_email" type="email"></div>' +
       '<div class="field"><label>Mot de passe</label><input id="gp_pwd" type="password"></div></div>' +
-      '<div class="actions"><button id="gp_login" type="button">Se connecter à GesParc</button> <span id="gp_msg" class="muted"></span></div></div>';
+      '<div class="actions"><button id="gp_login" type="button">Se connecter à SIGACI</button> <span id="gp_msg" class="muted"></span></div></div>';
   }
   function bindLogin() {
     var b = document.getElementById('gp_login');
     if (!b) return;
     b.onclick = function () {
-      var url = (window.GESPARC_URL || (document.getElementById('gp_url') || {}).value || '').trim().replace(/\/+$/, '');
+      var url = (window.SIGACI_URL || (document.getElementById('gp_url') || {}).value || '').trim().replace(/\/+$/, '');
       var email = document.getElementById('gp_email').value.trim();
       var pwd = document.getElementById('gp_pwd').value;
       var msg = document.getElementById('gp_msg');
@@ -137,8 +137,8 @@
     var u = s.utilisateur || {};
     root.innerHTML =
       '<div class="panel" style="border-left:5px solid #16845b;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">' +
-      '<div>Connecté à GesParc : <b>' + h(u.nom) + '</b> <span class="muted">· ' + h(u.role_libelle) + ' · ' + h(u.institution ? u.institution.nom : 'niveau national') + '</span></div>' +
-      '<div class="actions"><a class="secondary" style="text-decoration:none;padding:8px 12px;border-radius:8px;background:#e8eef5;color:#102b4e" target="_blank" rel="noopener" href="' + h(s.url) + '">Ouvrir GesParc</a> <button class="secondary" type="button" id="gp_logout">Se déconnecter</button></div></div>' +
+      '<div>Connecté à SIGACI : <b>' + h(u.nom) + '</b> <span class="muted">· ' + h(u.role_libelle) + ' · ' + h(u.institution ? u.institution.nom : 'niveau national') + '</span></div>' +
+      '<div class="actions"><a class="secondary" style="text-decoration:none;padding:8px 12px;border-radius:8px;background:#e8eef5;color:#102b4e" target="_blank" rel="noopener" href="' + h(s.url) + '">Ouvrir SIGACI</a> <button class="secondary" type="button" id="gp_logout">Se déconnecter</button></div></div>' +
       '<div class="panel"><h2>Nouvelle demande</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">' +
       '<div class="field"><label>Matériel souhaité</label><select id="gp_mat"><option value="">— Sélectionner —</option>' + types.map(function (t) { return '<option>' + h(t) + '</option>'; }).join('') + '</select></div>' +
       '<div class="field"><label>Quantité</label><input id="gp_qte" type="number" min="1" max="99" value="1"></div>' +
@@ -177,7 +177,7 @@
       var rows = j.donnees.map(function (r) {
         return '<tr><td><b>' + h(r.numero) + '</b><div class="muted">' + fmt(r.cree_le) + '</div></td><td><b>' + h(r.materiel) + '</b>' + (r.caracteristiques ? '<div class="muted">' + h(r.caracteristiques) + '</div>' : '') + '</td><td>' + h(r.quantite) + '</td><td>' + pill(r.statut, r.statut_libelle) + (r.motif_refus ? '<div class="muted">Motif : ' + h(r.motif_refus) + '</div>' : '') + '</td></tr>';
       }).join('');
-      document.getElementById('gp_mine').innerHTML = '<div class="panel"><h2>Mes demandes (GesParc)</h2>' + (rows
+      document.getElementById('gp_mine').innerHTML = '<div class="panel"><h2>Mes demandes (SIGACI)</h2>' + (rows
         ? '<div class="tablewrap"><table><thead><tr><th>N° / date</th><th>Matériel</th><th>Qté</th><th>Statut</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<div class="empty">Aucune demande.</div>') + '</div>';
     }).catch(showError);
@@ -214,7 +214,7 @@
           '<div class="actions"><button type="button" class="success" data-gp-ok="' + r.id + '">Accorder</button> <button type="button" class="danger" data-gp-ko="' + r.id + '">Refuser</button></div></div>';
       }).join('') || '<div class="empty">Aucune demande à traiter.</div>';
       var el = document.getElementById('gp_pending');
-      el.innerHTML = '<div class="panel"><h2>Demandes à traiter (GesParc) <span class="badge">' + items.length + '</span></h2>' + html + '</div>';
+      el.innerHTML = '<div class="panel"><h2>Demandes à traiter (SIGACI) <span class="badge">' + items.length + '</span></h2>' + html + '</div>';
       el.querySelectorAll('[data-gp-ok],[data-gp-ko]').forEach(function (b) {
         b.onclick = function () {
           var ok = b.hasAttribute('data-gp-ok'), id = b.getAttribute(ok ? 'data-gp-ok' : 'data-gp-ko'), body = { decision: ok ? 'accorder' : 'refuser' };
@@ -244,21 +244,21 @@
       host.parentNode.insertBefore(box, host);
     }
     if (!session()) {
-      box.innerHTML = '<div class="panel"><h2>Inventaire GesParc</h2><div class="muted">Connectez-vous à GesParc depuis la page « Demande de matériels informatiques » pour afficher l’inventaire du serveur.</div></div>';
+      box.innerHTML = '<div class="panel"><h2>Inventaire SIGACI</h2><div class="muted">Connectez-vous à SIGACI depuis la page « Demande de matériels informatiques » pour afficher l’inventaire du serveur.</div></div>';
       return;
     }
-    box.innerHTML = '<div class="panel"><h2>Inventaire GesParc</h2><div class="muted">Chargement…</div></div>';
+    box.innerHTML = '<div class="panel"><h2>Inventaire SIGACI</h2><div class="muted">Chargement…</div></div>';
     api('GET', '/equipements?par_page=200').then(function (j) {
       var rows = j.donnees.map(function (e) {
         return '<tr><td><b>' + h(e.numero_inventaire) + '</b></td><td>' + h(e.designation) + '<div class="muted">' + h([e.type, e.marque, e.modele].filter(Boolean).join(' · ')) + '</div></td><td>' + h(e.numero_serie || '—') + '</td><td>' + h([e.service, e.bureau ? 'Bureau ' + e.bureau : ''].filter(Boolean).join(' · ') || '—') + '</td><td>' + h(e.affecte_a ? e.affecte_a.nom : '—') + '</td><td>' + pill(e.statut, e.statut_libelle) + '</td></tr>';
       }).join('');
-      box.innerHTML = '<div class="panel"><h2>Inventaire GesParc <span class="muted">(' + j.pagination.total + ' équipements)</span></h2>' +
-        '<p class="muted">Lecture seule ici. Pour ajouter, affecter ou réformer un équipement : <a target="_blank" rel="noopener" href="' + h(session().url) + '/inventaire">ouvrir GesParc</a>.</p>' +
+      box.innerHTML = '<div class="panel"><h2>Inventaire SIGACI <span class="muted">(' + j.pagination.total + ' équipements)</span></h2>' +
+        '<p class="muted">Lecture seule ici. Pour ajouter, affecter ou réformer un équipement : <a target="_blank" rel="noopener" href="' + h(session().url) + '/inventaire">ouvrir SIGACI</a>.</p>' +
         (rows ? '<div class="tablewrap"><table><thead><tr><th>N° inventaire</th><th>Équipement</th><th>N° de série</th><th>Localisation</th><th>Affecté à</th><th>Statut</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty">Aucun équipement.</div>') + '</div>';
     }).catch(function (e) {
-      box.innerHTML = '<div class="panel"><h2>Inventaire GesParc</h2><div class="muted">' + h(e.message) + '</div></div>';
+      box.innerHTML = '<div class="panel"><h2>Inventaire SIGACI</h2><div class="muted">' + h(e.message) + '</div></div>';
     });
   }
 
-  window.GesParc = { session: session, deconnecter: function () { forget(); rerender(); } };
+  window.Sigaci = { session: session, deconnecter: function () { forget(); rerender(); } };
 })();

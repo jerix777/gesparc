@@ -6,7 +6,7 @@ use App\Enums\RequestStatus;
 use App\Enums\Role;
 use App\Models\MaterialRequest;
 
-class MaterialRequestTest extends GesParcTestCase
+class MaterialRequestTest extends SigaciTestCase
 {
     public function test_agent_request_is_decided_by_informaticien(): void
     {

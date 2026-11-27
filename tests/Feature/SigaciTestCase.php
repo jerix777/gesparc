@@ -10,7 +10,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-abstract class GesParcTestCase extends TestCase
+abstract class SigaciTestCase extends TestCase
 {
     use RefreshDatabase;
 

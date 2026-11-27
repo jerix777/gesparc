@@ -26,7 +26,7 @@ h1{font-size:19px;text-align:center;text-decoration:underline;margin:34px 0 24px
   <p>à s’absenter du <b>{{ $l->debut->translatedFormat('l j F Y') }}</b> au <b>{{ $l->fin->translatedFormat('l j F Y') }}</b> inclus, soit <b>{{ $l->jours_ouvres }} jour(s) ouvré(s)</b>, pour le motif suivant : {{ $l->motif }}.</p>
   <p>L’intéressé(e) reprendra son service le premier jour ouvré suivant la fin de cette autorisation.</p>
   <div class="sign">
-    <div class="verif">{!! $qr !!}Décision électronique enregistrée dans GesParc le {{ $l->decided_at->format('d/m/Y à H:i') }}.<br>Code de vérification : <b>{{ $l->verification_code }}</b></div>
+    <div class="verif">{!! $qr !!}Décision électronique enregistrée dans SIGACI le {{ $l->decided_at->format('d/m/Y à H:i') }}.<br>Code de vérification : <b>{{ $l->verification_code }}</b></div>
     <div style="text-align:center">{{ $l->signe_po ? 'P.O. ' : '' }}Le {{ $l->decider_fonction }}<br><br><b>{{ $l->decider?->full_name }}</b></div>
   </div>
 </div>

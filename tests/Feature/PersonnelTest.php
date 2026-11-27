@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Services\Personnel\PersonnelSetup;
 
 /** Module Personnel, lot 1 : fiches, fonctions d'autorité, règles, import, comptes. */
-class PersonnelTest extends GesParcTestCase
+class PersonnelTest extends SigaciTestCase
 {
     protected function setUp(): void
     {
@@ -75,8 +75,8 @@ class PersonnelTest extends GesParcTestCase
             ['id' => '0-2', 'serviceAffectation' => 'Greffe civil', 'numeroPorte' => '12', 'datePriseFonction' => '2021-09-01'],
         ])]]));
 
-        $this->artisan('gesparc:import-personnel', ['fichiers' => [$html, $backup], '--institution' => 'tpi-a'])->assertSuccessful();
-        $this->artisan('gesparc:import-personnel', ['fichiers' => [$html, $backup], '--institution' => 'tpi-a'])->assertSuccessful();
+        $this->artisan('sigaci:import-personnel', ['fichiers' => [$html, $backup], '--institution' => 'tpi-a'])->assertSuccessful();
+        $this->artisan('sigaci:import-personnel', ['fichiers' => [$html, $backup], '--institution' => 'tpi-a'])->assertSuccessful();
 
         $all = Staff::withoutGlobalScopes()->where('institution_id', $this->a->id)->with('positions', 'service', 'category')->get()->keyBy('source_ref');
         $this->assertCount(5, $all);

@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class CreateNationalAdmin extends Command
 {
-    protected $signature = 'gesparc:create-admin {email} {--name=Administrateur national}';
+    protected $signature = 'sigaci:create-admin {email} {--name=Administrateur national}';
 
     protected $description = 'Crée le premier compte administrateur national (installation)';
 
