@@ -87,6 +87,46 @@ Définis dans `App\Providers\AppServiceProvider` (Gates).
 
 Un agent voit le matériel qui lui est affecté et peut signaler une panne dessus.
 
+## Module Personnel
+
+Tables : `staff` (fiches, reliées à `users` quand l'agent a un compte), `staff_categories`, `staff_positions`
+(fonctions d'autorité attribuées nommément), `approval_rules` (qui décide, par catégorie et type de demande :
+`first_level`, `final_level`, `copy_to`). Le modèle « juridiction » (`PersonnelSetup::applyJuridiction`) reprend
+les règles du TPI de Bouaké ; chaque institution peut les modifier dans Personnel > Paramétrage.
+
+Les droits combinent le rôle GesParc et les fonctions d'autorité (`App\Services\Personnel\Authority`) :
+
+| Droit | Qui |
+| --- | --- |
+| Voir les fiches (`personnel.view`) | admin d'institution, admin national, auditeur, Président, Procureur, Greffier en Chef et adjoints, secrétaires |
+| Créer une fiche (`personnel.create`) | admin d'institution, Président, Procureur, Greffier en Chef |
+| Modifier une fiche, ouvrir le compte, sortie (`personnel.manage`) | admin d'institution et Président : toutes ; Procureur : magistrats du parquet sauf lui-même ; Greffier en Chef : personnel non magistrat |
+| Fonctions d'autorité et règles (`personnel.configure`) | admin d'institution, admin national |
+
+Comptes : identifiant = matricule (espaces et points ignorés) ou e-mail ; mot de passe provisoire affiché une
+fois, à changer à la première connexion (`must_change_password`, middleware `EnsurePasswordChanged`).
+
+### Circuits de validation (`App\Services\Personnel\Approvals`)
+
+Le circuit se lit dans `approval_rules` : `first_level` (fonctions qui donnent le premier avis), `final_level`
+(décision définitive), `copy_to` (information). Un agent qui détient lui-même une fonction du premier niveau passe
+directement au niveau final. Le Président et le Greffier en Chef sont dispensés de demande d'absence ; le Président
+est dispensé de vacances. Chaque étape est tracée dans `workflow_events` (trait `HasWorkflowEvents`).
+
+**Absences** (`leave_requests`, `LeaveService`) : validation électronique. Statuts `en_attente` → `transmise`
+(si deux niveaux) → `accordee` / `refusee`, ou `annulee` par l'agent tant que la demande est ouverte. Contrôles au
+dépôt : chevauchement, dispense, au moins un jour ouvré. Les jours ouvrés excluent week-ends et jours fériés
+(`public_holidays`, `WorkingDays` : fêtes civiles et chrétiennes calculées, fêtes musulmanes saisies dans
+Paramétrage). La décision accordée est numérotée (`AA-AAAA-NNN`), porte un code de vérification et un QR code ;
+« P.O. » quand un adjoint du Greffier en Chef signe. Page publique `/verification/{code}` (30 requêtes/minute).
+
+**Vacances judiciaires** (`vacation_campaigns`, `vacation_requests`, `vacation_lists`, `VacationService`) :
+campagne annuelle ouverte par l'admin, le Président ou le Greffier en Chef (mois août/septembre). L'agent choisit
+son mois ; quota par service : au plus ⌈n/2⌉ départs le même mois. Le premier niveau retient le mois à titre
+provisoire (`transmise`), le Président valide (observation obligatoire s'il change le mois). À la clôture, le
+Président édite les listes définitives `LD-AAAA-AOUT`, `-SEPT`, `-GEN` (suffixe `-Vn` après réouverture ; magistrats
+exclus), qui s'impriment, se signent à la main et dont le scan est archivé.
+
 ## Sécurité
 
 - Mots de passe hachés (bcrypt) ; verrouillage 15 min après 5 échecs ; limitation à 20 tentatives/min par IP.

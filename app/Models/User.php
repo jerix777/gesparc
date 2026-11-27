@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -17,7 +18,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'institution_id', 'service_id', 'name', 'email', 'password', 'matricule', 'fonction', 'bureau', 'role', 'active',
+        'institution_id', 'service_id', 'name', 'email', 'password', 'matricule', 'fonction', 'bureau', 'role', 'active', 'must_change_password',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -30,6 +31,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -46,6 +48,11 @@ class User extends Authenticatable
     public function equipments(): HasMany
     {
         return $this->hasMany(Equipment::class, 'assigned_user_id');
+    }
+
+    public function staff(): HasOne
+    {
+        return $this->hasOne(Staff::class);
     }
 
     public function hasRole(Role ...$roles): bool

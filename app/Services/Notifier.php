@@ -89,6 +89,12 @@ class Notifier
         ));
     }
 
+    /** Courriel du module Personnel aux comptes donnés (sauf l'auteur de l'action). */
+    public function personnel(Collection $users, string $subject, array $lines, string $actionText, string $url): void
+    {
+        $this->send($users->filter(fn ($u) => $u && $u->id !== Auth::id()), new GesParcMessage($subject, $lines, $actionText, $url));
+    }
+
     /** Destinataires actifs de l'institution ayant l'un des rôles, sauf l'auteur de l'action. */
     private function staff(int $institutionId, array $roles): Collection
     {
