@@ -20,7 +20,7 @@ Né du module « Parc informatique et accessoires » de l'application de gestion
 - **Courriels automatiques** : nouvelle demande ou panne au Service informatique, décision au demandeur, réforme à valider au responsable, stock bas.
 - **Tableaux de bord** : par statut, par type, matériel de plus de 5 ans, garanties qui expirent, vue nationale par institution.
 - **Personnel** : fiches, comptes par matricule, absences validées en ligne (décision avec QR code vérifiable), vacances judiciaires avec quota par service, validation du Président et listes signées.
-- **Reprise** des données de l'application TPI (`sigaci:import-tpi`).
+- **Reprise** des données de l'application TPI (`sigaci:reprise-origine`, `sigaci:import-tpi`, `sigaci:import-personnel`).
 
 Architecture, modèle de données et droits : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -97,6 +97,23 @@ apporte les services, bureaux et dates de prise de fonction saisis depuis. La co
 créer de doublons. Les fonctions d'autorité (Président, Procureur, Greffier en Chef…) sont proposées d'après
 l'intitulé de la fonction, puis se vérifient dans Personnel > Paramétrage. **Ces fichiers contiennent des données
 personnelles : ne les ajoutez jamais au dépôt.**
+
+### Reprise complète depuis les fichiers HTML d'origine
+
+Une seule commande reprend tout ce que contiennent les fichiers HTML de l'application (personnel avec services et
+bureaux, unités centrales, écrans, imprimantes, scanners, références de toner) :
+
+```bash
+# 1. Relire les données mises en correspondance (fichier JSON, rien n'est importé)
+php artisan sigaci:reprise-origine GESTION_DU_PERSONNEL.html --exporter=reprise-tpi-bouake.json
+# 2. Simuler, puis importer (le JSON relu ou directement le HTML)
+php artisan sigaci:reprise-origine reprise-tpi-bouake.json --institution=TPI-BKE --dry-run
+php artisan sigaci:reprise-origine reprise-tpi-bouake.json --institution=TPI-BKE
+```
+
+`--creer-institution` crée l'institution si elle n'existe pas encore. La commande peut être relancée sans doublons :
+une fiche ou un équipement déjà repris est mis à jour (description seulement pour le matériel). Les lignes non
+reprises et les points à vérifier sont listés à la fin. Les stocks de toner sont créés à 0, à saisir ensuite.
 
 Les jours fériés civils et chrétiens sont calculés automatiquement ; les fêtes musulmanes (dates annoncées chaque
 année) s'ajoutent dans Personnel > Paramétrage.
