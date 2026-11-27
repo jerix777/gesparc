@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Mon espace')
 @section('content')
+@include('partials.hero', ['title' => 'Vos démarches, <span class="o">simplifiées</span>.', 'lead' => 'Retrouvez votre matériel, vos demandes et vos démarches administratives dans un espace clair, pensé pour faciliter votre quotidien.', 'chips' => array_filter(['Demander du matériel' => \Illuminate\Support\Facades\Gate::allows('requests.create') ? route('requests.create') : null, 'Mes demandes' => route('requests.index'), 'Mes absences' => auth()->user()->staff ? route('personnel.absences.index') : null, 'Mes vacances' => auth()->user()->staff ? route('personnel.vacations.index') : null])])
 <div class="pagehead"><div><h1>Mon espace</h1><div class="sub">{{ auth()->user()->fonction }} @if(auth()->user()->bureau)· Bureau {{ auth()->user()->bureau }}@endif</div></div>
   @can('requests.create')<a class="btn" href="{{ route('requests.create') }}">+ Demander du matériel</a>@endcan</div>
 <div class="panel"><h2>Matériel qui m'est affecté</h2>

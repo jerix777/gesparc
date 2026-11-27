@@ -1,4 +1,4 @@
-# API GesParc v1
+# API SIGACI v1
 
 API JSON utilisée par l'application TPI (et par tout autre outil autorisé). Adresse de base : `https://<serveur>/api/v1`.
 
@@ -31,10 +31,10 @@ Adaptateur, Multiprise, Cartouche d’encre, Autres accessoires informatiques.
 ## Exemple
 
 ```bash
-JETON=$(curl -s -X POST https://gesparc.exemple.ci/api/v1/jetons -H 'Accept: application/json' \
+JETON=$(curl -s -X POST https://sigaci.exemple.ci/api/v1/jetons -H 'Accept: application/json' \
   -d email=agent@exemple.ci -d password='...' | jq -r .jeton)
 
-curl -s -X POST https://gesparc.exemple.ci/api/v1/demandes -H "Authorization: Bearer $JETON" \
+curl -s -X POST https://sigaci.exemple.ci/api/v1/demandes -H "Authorization: Bearer $JETON" \
   -H 'Accept: application/json' -H 'Content-Type: application/json' \
   -d '{"materiel":"Souris","quantite":1}'
 ```

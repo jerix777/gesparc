@@ -2,6 +2,14 @@
 @section('title', 'Tableau de bord')
 @section('content')
 @php($statuses = \App\Enums\EquipmentStatus::cases())
+@php($chips = array_filter([
+  'Inventaire' => \Illuminate\Support\Facades\Gate::allows('inventory.view') ? route('equipments.index') : null,
+  'Demandes' => route('requests.index'),
+  'Pannes' => \Illuminate\Support\Facades\Gate::allows('inventory.view') ? route('incidents.index') : null,
+  'Personnel' => \Illuminate\Support\Facades\Gate::allows('personnel.view') ? route('personnel.staff.index') : null,
+  'Absences' => (auth()->user()->staff || \Illuminate\Support\Facades\Gate::allows('personnel.view')) ? route('personnel.absences.index') : null,
+]))
+@include('partials.hero', ['title' => 'Une administration <span class="o">moderne</span>, au service de chaque agent.', 'lead' => 'Pilotez le parc informatique, les demandes de matériel, les pannes et le personnel depuis un tableau de bord unique, au service d’une administration moderne et rigoureuse.', 'chips' => $chips])
 <div class="pagehead"><div><h1>Tableau de bord</h1><div class="sub">{{ auth()->user()->institution?->nom ?? 'Vue nationale, toutes institutions' }}</div></div>
   @can('inventory.manage')<a class="btn" href="{{ route('equipments.create') }}">+ Nouvel équipement</a>@endcan</div>
 

@@ -37,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('incidents.manage', $roles(R::Informaticien));
         Gate::define('users.manage', $roles(R::AdminInstitution, R::AdminNational));
         Gate::define('institutions.manage', $roles(R::AdminNational));
-        // Module Personnel : rôle GesParc + fonctions d'autorité de la fiche (App\Services\Personnel\Authority).
+        // Module Personnel : rôle SIGACI + fonctions d'autorité de la fiche (App\Services\Personnel\Authority).
         Gate::define('personnel.view', fn (User $u) => Authority::canView($u));
         Gate::define('personnel.create', fn (User $u) => Authority::canCreate($u));
         Gate::define('personnel.manage', fn (User $u, Staff $s) => Authority::canManage($u, $s));

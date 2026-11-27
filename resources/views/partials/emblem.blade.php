@@ -1,0 +1,1 @@
+<span class="emblem" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 11v41M21 54h22M25 58h14M10 19q22-6 44 0M14 19 8 36M14 19l6 17M50 19l-6 17M50 19l6 17M6 36h16c0 5-3.5 8-8 8s-8-3-8-8zM42 36h16c0 5-3.5 8-8 8s-8-3-8-8z"/><circle cx="32" cy="8" r="2.2"/></svg></span>

@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**
- * Droits du module Personnel. Ils combinent le rôle GesParc (administrateur, auditeur…)
+ * Droits du module Personnel. Ils combinent le rôle SIGACI (administrateur, auditeur…)
  * et les fonctions d'autorité attribuées à la fiche de l'utilisateur (Président, Greffier en Chef…).
  */
 class Authority

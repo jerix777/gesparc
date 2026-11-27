@@ -1,7 +1,7 @@
-# GesParc — architecture et modèle de données
+# SIGACI — architecture et modèle de données
 
 Ce document décrit l'étape 2 du projet : comment l'application est construite et comment ses données sont organisées.
-Le cahier des charges fonctionnel est tenu à part (Claude Doc « GesParc – Cahier des charges »).
+Le cahier des charges fonctionnel est tenu à part (Claude Doc « SIGACI – Cahier des charges »).
 
 ## Pile technique
 
@@ -94,7 +94,7 @@ Tables : `staff` (fiches, reliées à `users` quand l'agent a un compte), `staff
 `first_level`, `final_level`, `copy_to`). Le modèle « juridiction » (`PersonnelSetup::applyJuridiction`) reprend
 les règles du TPI de Bouaké ; chaque institution peut les modifier dans Personnel > Paramétrage.
 
-Les droits combinent le rôle GesParc et les fonctions d'autorité (`App\Services\Personnel\Authority`) :
+Les droits combinent le rôle SIGACI et les fonctions d'autorité (`App\Services\Personnel\Authority`) :
 
 | Droit | Qui |
 | --- | --- |
@@ -142,7 +142,7 @@ transaction ; si le stock est insuffisant, rien n'est enregistré et la demande 
 
 ## Courriels
 
-`App\Services\Notifier` envoie un courriel (classe `GesParcMessage`) à chaque événement :
+`App\Services\Notifier` envoie un courriel (classe `SigaciMessage`) à chaque événement :
 
 | Événement | Destinataires (même institution, comptes actifs, sauf l'auteur) |
 | --- | --- |
@@ -152,13 +152,13 @@ transaction ; si le stock est insuffisant, rien n'est enregistré et la demande 
 | Réforme proposée | responsables |
 | Consommable passé sous le seuil | informaticiens et gestionnaires de stock |
 
-Un échec d'envoi est journalisé sans bloquer l'action. `GESPARC_NOTIFICATIONS=false` coupe tout.
+Un échec d'envoi est journalisé sans bloquer l'action. `SIGACI_NOTIFICATIONS=false` coupe tout.
 
 ## API et application TPI
 
 - API JSON v1 sous `/api/v1`, jetons Sanctum : voir [API.md](API.md). Les contrôleurs web et API partagent
   les mêmes services (`MaterialRequests`, `EquipmentLifecycle`, `LoginGuard`), donc les mêmes règles.
-- Le connecteur `public/connecteur/gesparc-tpi.js` se charge dans l'application TPI. Une fois l'agent connecté,
+- Le connecteur `public/connecteur/sigaci-tpi.js` se charge dans l'application TPI. Une fois l'agent connecté,
   les demandes de matériel passent par l'API et l'inventaire du serveur s'affiche dans « Parc informatique ».
   Le jeton est gardé dans le navigateur (localStorage), par agent TPI.
 - Installation, sauvegardes et raccordement : [INSTALLATION.md](INSTALLATION.md).

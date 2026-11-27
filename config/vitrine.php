@@ -14,7 +14,7 @@ return [
     'service' => env('VITRINE_SERVICE', 'Service informatique'),
     'ville' => env('VITRINE_VILLE', 'Bouaké, région du Gbêkê'),
 
-    // Afficher les statistiques calculées en direct depuis GesParc (chiffres agrégés, aucune donnée personnelle).
+    // Afficher les statistiques calculées en direct depuis SIGACI (chiffres agrégés, aucune donnée personnelle).
     'statistiques' => (bool) env('VITRINE_STATISTIQUES', true),
 
     // Coordonnées affichées en bas de page (laisser vide pour masquer).

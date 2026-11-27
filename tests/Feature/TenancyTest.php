@@ -6,7 +6,7 @@ use App\Enums\Role;
 use App\Models\Equipment;
 use App\Models\EquipmentType;
 
-class TenancyTest extends GesParcTestCase
+class TenancyTest extends SigaciTestCase
 {
     public function test_informaticien_only_sees_own_institution(): void
     {

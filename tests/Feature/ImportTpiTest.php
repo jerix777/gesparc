@@ -6,7 +6,7 @@ use App\Enums\EquipmentStatus;
 use App\Enums\Role;
 use App\Models\Equipment;
 
-class ImportTpiTest extends GesParcTestCase
+class ImportTpiTest extends SigaciTestCase
 {
     public function test_imports_tpi_backup_file(): void
     {
@@ -24,7 +24,7 @@ class ImportTpiTest extends GesParcTestCase
         $file = tempnam(sys_get_temp_dir(), 'tpi');
         file_put_contents($file, json_encode(['application' => 'TPI', 'donnees' => ['tpi_it' => json_encode($items)]]));
 
-        $this->artisan('gesparc:import-tpi', ['fichier' => $file, '--institution' => 'tpi-a'])->assertSuccessful();
+        $this->artisan('sigaci:import-tpi', ['fichier' => $file, '--institution' => 'tpi-a'])->assertSuccessful();
 
         $all = Equipment::withoutGlobalScopes()->where('institution_id', $this->a->id)->orderBy('id')->get();
         $this->assertCount(3, $all);
