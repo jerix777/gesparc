@@ -10,11 +10,13 @@ class CreateNationalAdmin extends Command
 {
     protected $signature = 'sigaci:create-admin {email} {--name=Administrateur national}';
 
-    protected $description = 'Crée le premier compte administrateur national (installation)';
+    protected $description = 'Crée le premier compte administrateur national (installation). '
+        .'Mot de passe demandé au clavier, ou lu dans la variable d\'environnement SIGACI_ADMIN_MDP (installation automatique).';
 
     public function handle(): int
     {
-        $password = $this->secret('Mot de passe (8 caractères minimum)');
+        // Variable d'environnement plutôt qu'option : un mot de passe en ligne de commande resterait dans l'historique.
+        $password = getenv('SIGACI_ADMIN_MDP') ?: $this->secret('Mot de passe (8 caractères minimum)');
         if (strlen((string) $password) < 8) {
             $this->error('Mot de passe trop court.');
 
