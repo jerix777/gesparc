@@ -42,7 +42,7 @@ equipment_types  (référentiel national)
 | `services` | Service interne d'une institution | `institution_id`, `nom` |
 | `users` | Comptes | `institution_id` (vide pour les rôles nationaux), `service_id`, `role`, `fonction`, `bureau`, `failed_logins`, `locked_until` |
 | `equipment_types` | Types (ordinateur, imprimante…) | `nom`, `categorie` |
-| `equipments` | Fiche équipement | `numero_inventaire` (unique par institution), `statut`, `etat`, `reforme_motif` / `reforme_proposee_par` / `reforme_proposee_le` (réforme en attente), `numero_serie`, `date_acquisition`, `prix_achat` (FCFA), `fin_garantie`, `service_id`, `bureau`, `assigned_user_id` |
+| `equipments` | Fiche équipement | `numero_inventaire` (unique par institution), `statut`, `etat`, `reforme_motif` / `reforme_proposee_par` / `reforme_proposee_le` (réforme en attente), `numero_serie`, `date_acquisition`, `prix_achat` (FCFA), `fin_garantie`, `service_id`, `bureau`, `assigned_user_id`, `source_ref` (identifiant d'origine d'un équipement repris, unique par institution) |
 | `equipment_movements` | Historique | `type`, `statut_avant`, `statut_apres`, `from_user_id`, `to_user_id`, `motif`, `author_id` |
 | `incidents` | Pannes | `numero` (PAN-AAAA-NNN), `statut`, `prestataire`, `cout`, `resolution` |
 | `material_requests` | Demandes | `numero` (DEM-AAAA-NNN), `categorie` (materiel / cartouche), `materiel`, `quantite`, `statut`, `motif_refus` |
@@ -162,3 +162,18 @@ Un échec d'envoi est journalisé sans bloquer l'action. `SIGACI_NOTIFICATIONS=f
   les demandes de matériel passent par l'API et l'inventaire du serveur s'affiche dans « Parc informatique ».
   Le jeton est gardé dans le navigateur (localStorage), par agent TPI.
 - Installation, sauvegardes et raccordement : [INSTALLATION.md](INSTALLATION.md).
+
+## Reprise des données de l'application d'origine
+
+`php artisan sigaci:reprise-origine` lit les fichiers HTML autonomes de l'application « Gestion du personnel –
+TPI de Bouaké » (`App\Services\Reprise\TpiHtmlExtractor`) : liste du personnel (`initialPeople`), services et
+bureaux de novembre 2026 (`TPI_SERVICE_UPDATE_NOV2026*`) et inventaire du Pack informatique (bloc base64 `#pcSrc`).
+
+- Personnel : `App\Services\Personnel\StaffImport`, partagé avec `sigaci:import-personnel`, retrouve la fiche par
+  `staff.source_ref` et propose les fonctions d'autorité d'après l'intitulé de la fonction.
+- Équipements : retrouvés par `equipments.source_ref` (`pc:<ligne>`, `ecran:<ligne>`, `imp:<id>`, `scan:<ligne>`).
+  À la création : n° d'inventaire, mouvement `import`, puis affectation au service et au bureau d'origine par
+  `EquipmentLifecycle::assign()`. À une nouvelle reprise, seule la description est actualisée.
+- Consommables : une référence par toner rencontré, stock à 0 ; une référence existante n'est pas modifiée.
+- `--exporter=fichier.json` écrit les données mises en correspondance (format `sigaci-reprise`), relisibles
+  puis importables par la même commande. Ce fichier contient des données personnelles : hors du dépôt.

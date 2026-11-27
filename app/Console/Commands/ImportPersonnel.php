@@ -2,13 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\Position;
 use App\Models\Institution;
-use App\Models\Service;
-use App\Models\Staff;
-use App\Models\StaffCategory;
-use App\Models\StaffPosition;
-use App\Services\Personnel\PersonnelSetup;
+use App\Services\Personnel\StaffImport;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -28,15 +23,6 @@ class ImportPersonnel extends Command
         {--institution= : Code de l\'institution cible (ex. TPI-BKE)} {--dry-run : Afficher sans enregistrer}';
 
     protected $description = "Importe les fiches du personnel de l'application TPI (Gestion du personnel)";
-
-    private const CATEGORIES = [
-        'magistrats du siege' => 'magistrats_siege',
-        'magistrats du parquet' => 'magistrats_parquet',
-        'personnel des greffes' => 'greffes',
-        'personnel interministeriel' => 'interministeriel',
-        'contractuels du tribunal' => 'contractuels',
-        'contractuels' => 'contractuels',
-    ];
 
     public function handle(): int
     {
@@ -59,55 +45,29 @@ class ImportPersonnel extends Command
             }
         }
 
-        PersonnelSetup::applyJuridiction($institution);
-        $categories = StaffCategory::withoutGlobalScopes()->where('institution_id', $institution->id)->pluck('id', 'code');
-        $stats = ['créées' => 0, 'mises à jour' => 0, 'fonctions' => 0];
-        $warnings = [];
-
         DB::beginTransaction();
+        $import = new StaffImport($institution);
         foreach ($people as $ref => $p) {
-            $nom = trim((string) ($p['nom'] ?? ''));
-            if ($nom === '') {
-                $warnings[] = "fiche {$ref} ignorée : nom vide";
-
-                continue;
-            }
-            $catCode = self::CATEGORIES[Str::of($p['categorie'] ?? '')->ascii()->lower()->trim()->value()] ?? null;
-            if (! $catCode) {
-                $warnings[] = "{$nom} : catégorie « ".($p['categorie'] ?? '').' » inconnue, à renseigner';
-            }
-            $serviceName = $this->serviceName($p);
-            $service = $serviceName ? Service::withoutGlobalScopes()->firstOrCreate(['institution_id' => $institution->id, 'nom' => $serviceName]) : null;
             $sorti = mb_strtolower((string) ($p['statut'] ?? 'Actif')) !== 'actif';
-
-            $staff = Staff::withoutGlobalScopes()->firstOrNew(['institution_id' => $institution->id, 'source_ref' => $ref]);
-            $stats[$staff->exists ? 'mises à jour' : 'créées']++;
-            $staff->fill([
-                'staff_category_id' => $catCode ? $categories[$catCode] : null,
-                'service_id' => $service?->id,
-                'matricule' => trim((string) ($p['matricule'] ?? '')) ?: null,
-                'nom' => $nom,
-                'prenoms' => trim((string) ($p['prenoms'] ?? '')) ?: null,
-                'fonction' => trim((string) ($p['fonction'] ?? '')) ?: null,
-                'telephone' => trim((string) ($p['telephone'] ?? '')) ?: null,
-                'email' => filter_var(trim((string) ($p['email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: null,
-                'bureau' => trim((string) ($p['numeroPorte'] ?? '')) ?: null,
+            $import->upsert([
+                'source_ref' => (string) $ref,
+                'nom' => (string) ($p['nom'] ?? ''),
+                'prenoms' => $p['prenoms'] ?? null,
+                'categorie' => StaffImport::categoryCode($p['categorie'] ?? null) ?? ($p['categorie'] ?? null),
+                'service' => $this->serviceName($p),
+                'matricule' => $p['matricule'] ?? null,
+                'fonction' => $p['fonction'] ?? null,
+                'telephone' => $p['telephone'] ?? null,
+                'email' => $p['email'] ?? null,
+                'bureau' => $p['numeroPorte'] ?? null,
                 'date_prise_service' => $this->date($p['datePriseFonction'] ?? null),
                 'statut' => $sorti ? 'sorti' : 'actif',
                 'date_sortie' => $sorti ? $this->date($p['dateSortie'] ?? null) : null,
-                'motif_sortie' => $sorti ? (trim((string) ($p['motifSortie'] ?? '')) ?: null) : null,
-            ])->save();
-
-            foreach ($this->positionsFor($p) as $position) {
-                if ($position->isUnique() && StaffPosition::withoutGlobalScopes()->where('institution_id', $institution->id)->where('position', $position)->where('staff_id', '!=', $staff->id)->exists()) {
-                    $warnings[] = "{$nom} : la fonction « {$position->label()} » a déjà un titulaire, à vérifier";
-
-                    continue;
-                }
-                $pos = StaffPosition::withoutGlobalScopes()->firstOrCreate(['staff_id' => $staff->id, 'position' => $position], ['institution_id' => $institution->id]);
-                $stats['fonctions'] += $pos->wasRecentlyCreated ? 1 : 0;
-            }
+                'motif_sortie' => $p['motifSortie'] ?? null,
+            ]);
         }
+        $stats = $import->stats;
+        $warnings = $import->warnings;
 
         if ($this->option('dry-run')) {
             DB::rollBack();
@@ -123,34 +83,6 @@ class ImportPersonnel extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    /** Fonctions d'autorité déduites une seule fois, à l'import ; elles se règlent ensuite à la main. */
-    private function positionsFor(array $p): array
-    {
-        $f = trim((string) ($p['fonction'] ?? ''));
-        $out = [];
-        if (preg_match('/^président du tribunal$/iu', $f)) {
-            $out[] = Position::Chef;
-        }
-        if (preg_match('/^procureur de la république$/iu', $f)) {
-            $out[] = Position::ChefParquet;
-        }
-        if (preg_match('/^greffier en chef$/iu', $f)) {
-            $out[] = Position::ChefAdministratif;
-        }
-        if (preg_match('/^greffier en chef adjoint$/iu', $f)) {
-            $out[] = Position::AdjointAdministratif;
-        }
-        // « Secrétaire des greffes et parquets » est un grade des greffes, pas un poste de secrétariat.
-        if (preg_match('/secr[eé]taire/iu', $f) && ! preg_match('/greffes/iu', $f)) {
-            $out[] = Position::Secretaire;
-        }
-        if (preg_match('/archiv/iu', $f) || ($p['serviceAffectation'] ?? '') === 'Archives') {
-            $out[] = Position::Archiviste;
-        }
-
-        return $out;
     }
 
     private function serviceName(array $p): ?string

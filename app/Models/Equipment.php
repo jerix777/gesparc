@@ -21,7 +21,7 @@ class Equipment extends Model
         'institution_id', 'numero_inventaire', 'equipment_type_id', 'designation', 'marque', 'modele',
         'numero_serie', 'caracteristiques', 'fournisseur', 'date_acquisition', 'prix_achat', 'fin_garantie',
         'statut', 'etat', 'service_id', 'bureau', 'assigned_user_id', 'observations',
-        'reforme_motif', 'reforme_proposee_par', 'reforme_proposee_le',
+        'reforme_motif', 'reforme_proposee_par', 'reforme_proposee_le', 'source_ref',
     ];
 
     protected $casts = [
