@@ -1,5 +1,9 @@
 # Installer SIGACI sur un serveur
 
+> **Installation automatique** : `sudo bash installation/installer.sh` (Linux) ou `installation\installer.cmd` (Windows)
+> fait tout ce qui suit sans question, et le relancer met SIGACI à jour. Voir [installation/LISEZMOI.md](../installation/LISEZMOI.md).
+> Ce guide reste utile pour comprendre ou adapter l'installation à la main.
+
 Ce guide installe SIGACI sur un serveur Linux Ubuntu 24.04, avec MariaDB, Nginx et HTTPS.
 Comptez environ une heure. Les commandes sont à lancer en `root` (ou avec `sudo`).
 

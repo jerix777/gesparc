@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\Role as R;
+use App\Models\Setting;
 use App\Models\Staff;
 use App\Models\User;
 use App\Services\Personnel\Authority;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale(config('app.locale')); // dates en toutes lettres en français
         Paginator::defaultView('partials.pagination');
         Paginator::defaultSimpleView('partials.pagination');
+        Setting::apply(); // nom de l'application et autres réglages de Administration > Paramètres
 
         // Droits d'accès : voir le tableau du cahier des charges (docs/ARCHITECTURE.md).
         $roles = fn (R ...$roles) => fn (User $u) => $u->hasRole(...$roles);
@@ -37,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('incidents.manage', $roles(R::Informaticien));
         Gate::define('users.manage', $roles(R::AdminInstitution, R::AdminNational));
         Gate::define('institutions.manage', $roles(R::AdminNational));
+        Gate::define('settings.manage', $roles(R::AdminNational)); // Administration > Paramètres (nom de l'application)
         // Module Personnel : rôle SIGACI + fonctions d'autorité de la fiche (App\Services\Personnel\Authority).
         Gate::define('personnel.view', fn (User $u) => Authority::canView($u));
         Gate::define('personnel.create', fn (User $u) => Authority::canCreate($u));

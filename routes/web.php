@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsumableController;
@@ -99,5 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::get('services', [ServiceController::class, 'index'])->name('services.index');
         Route::post('services', [ServiceController::class, 'store'])->name('services.store');
         Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+        Route::get('parametres', [SettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('parametres', [SettingsController::class, 'update'])->name('settings.update');
     });
 });

@@ -30,3 +30,6 @@ Thumbs.db
 /imports/
 *.personnel.html
 GESTION_DU_PERSONNEL*.html
+
+# Copies de .env faites par installation/installer.*
+.env.sauvegarde-*

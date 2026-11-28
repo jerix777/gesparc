@@ -27,13 +27,13 @@ class SigaciMessage extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('[SIGACI] '.$this->subject)
+            ->subject('['.config('sigaci.sigle').'] '.$this->subject)
             ->greeting('Bonjour '.$notifiable->name.',');
         foreach ($this->lines as $line) {
             $mail->line($line);
         }
 
         return $mail->action($this->actionText, $this->actionUrl)
-            ->salutation("— SIGACI, Système Intégré de Gestion et d'Administration de Côte d'Ivoire\nMessage automatique, merci de ne pas y répondre.");
+            ->salutation('— '.config('sigaci.sigle').', '.config('sigaci.nom')."\nMessage automatique, merci de ne pas y répondre.");
     }
 }

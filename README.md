@@ -31,6 +31,17 @@ L'habillage reprend celui de l'application « Gestion du personnel – TPI de Bo
 (`public/css/app.css`). Le ministère affiché en haut des pages et le bandeau « Information » se règlent dans
 `config/sigaci.php` (variables `SIGACI_TUTELLE` et `SIGACI_INFORMATION` du fichier `.env`).
 
+## Installation automatique
+
+Le dossier [`installation/`](installation/LISEZMOI.md) installe SIGACI et tout ce dont il a besoin (PHP, base de données,
+serveur web, démarrage automatique, sauvegardes, accès depuis le réseau local), sans aucune question.
+Le relancer met SIGACI à jour.
+
+```text
+Windows (double-clic) : installation\installer.cmd      (utilise Laragon s'il est installé, sinon PHP + MariaDB + Caddy)
+Linux ou WSL          : sudo bash installation/installer.sh
+```
+
 ## Démarrer en local
 
 Prérequis : PHP 8.3 et Composer.
