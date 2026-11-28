@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connexion – SIGACI</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connexion – {{ config('sigaci.sigle') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700;9..40,800&display=swap">
 <link rel="stylesheet" href="{{ asset('css/app.css') }}"></head>
@@ -8,7 +8,7 @@
 @php($profils = ['agent' => 'Espace agent', 'informatique' => 'Service informatique', 'administration' => 'Responsables et administrateurs'])
 <div class="login">
   <div class="intro">
-    <div class="brandline">@include('partials.emblem')<div><b>SIGACI</b><span>{{ config('sigaci.nom') }}</span></div></div>
+    <div class="brandline">@include('partials.emblem')<div><b>{{ config('sigaci.sigle') }}</b><span>{{ config('sigaci.nom') }}</span></div></div>
     <h2>Une administration au <span class="o">service</span> de chaque agent.</h2>
     <p>Plus besoin de vous déplacer. Faites vos démarches administratives en ligne : matériel, pannes, absences et vacances judiciaires.</p>
     <div class="docs" aria-hidden="true"><i></i><i></i><i></i></div>

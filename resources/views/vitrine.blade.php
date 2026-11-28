@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 @php($v = config('vitrine'))
-<title>{{ $v['sigle'] }} – Parc informatique · SIGACI</title>
-<meta name="description" content="Portail du parc informatique du {{ $v['nom'] }} : inventaire, demandes de matériel, pannes et consommables, avec SIGACI.">
+<title>{{ $v['sigle'] }} – Parc informatique · {{ config('sigaci.sigle') }}</title>
+<meta name="description" content="Portail du parc informatique du {{ $v['nom'] }} : inventaire, demandes de matériel, pannes et consommables, avec {{ config('sigaci.sigle') }}.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700;9..40,800&display=swap">
 <link rel="stylesheet" href="{{ asset('css/vitrine.css') }}">
 </head>
@@ -65,7 +65,7 @@
 <section id="chiffres" class="stats-section">
   <div class="wrap">
     <div class="head"><span class="k">En chiffres</span><h2>Le parc informatique du {{ $v['sigle'] }} aujourd'hui</h2>
-      <p>@if($stats)Chiffres calculés en direct depuis SIGACI, mis à jour le {{ $stats['maj'] }}.@else Les chiffres s'afficheront dès que l'inventaire du tribunal sera saisi dans SIGACI.@endif</p></div>
+      <p>@if($stats)Chiffres calculés en direct depuis {{ config('sigaci.sigle') }}, mis à jour le {{ $stats['maj'] }}.@else Les chiffres s'afficheront dès que l'inventaire du tribunal sera saisi dans {{ config('sigaci.sigle') }}.@endif</p></div>
     @if ($stats)
     <div class="stats">
       <div class="stat"><b data-count="{{ $stats['equipements'] }}">{{ $stats['equipements'] }}</b><span>équipements en service ou en stock</span></div>
@@ -158,7 +158,7 @@
     <div class="final">
       <h2>Un besoin en matériel ? Une panne ?</h2>
       <p>Connectez-vous et adressez votre demande au {{ $v['service'] }} en quelques clics.</p>
-      <a class="btn gold" href="{{ route('login') }}">Accéder à SIGACI</a>
+      <a class="btn gold" href="{{ route('login') }}">Accéder à {{ config('sigaci.sigle') }}</a>
     </div>
   </div>
 </section>
@@ -170,7 +170,7 @@
       @if($v['contact']['adresse'])<br>{{ $v['contact']['adresse'] }}@endif
       @if($v['contact']['telephone'])<br>Tél. {{ $v['contact']['telephone'] }}@endif
       @if($v['contact']['email'])<br><a href="mailto:{{ $v['contact']['email'] }}">{{ $v['contact']['email'] }}</a>@endif</div>
-    <div style="text-align:right">Plateforme <b>SIGACI</b> · gestion du parc informatique des institutions publiques<br>Un compte ? Demandez-le à l'administrateur du tribunal.<br><a href="{{ route('login') }}">Se connecter</a></div>
+    <div style="text-align:right">Plateforme <b>{{ config('sigaci.sigle') }}</b> · gestion du parc informatique des institutions publiques<br>Un compte ? Demandez-le à l'administrateur du tribunal.<br><a href="{{ route('login') }}">Se connecter</a></div>
   </div>
 </footer>
 <script>

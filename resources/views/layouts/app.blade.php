@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>@yield('title', 'Accueil') – SIGACI</title>
+<title>@yield('title', 'Accueil') – {{ config('sigaci.sigle') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700;9..40,800&display=swap">
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
@@ -15,7 +15,7 @@
   <aside class="side">
     <a class="brand" href="{{ route('home') }}" title="{{ config('sigaci.nom') }}">
       @include('partials.emblem')
-      <span><b>SIGACI</b><small>{{ $u->institution?->nom ?? 'Niveau national · toutes institutions' }}</small></span>
+      <span><b>{{ config('sigaci.sigle') }}</b><small>{{ $u->institution?->nom ?? 'Niveau national · toutes institutions' }}</small></span>
     </a>
     <nav class="nav" aria-label="Menu principal">
       <div class="group">Général</div>
@@ -40,9 +40,10 @@
         @can('institutions.manage'){!! $nav('admin.institutions.index', '▥', 'Institutions', 'admin.institutions.*') !!}@endcan
         {!! $nav('admin.users.index', '⚿', 'Comptes et mots de passe', 'admin.users.*') !!}
         {!! $nav('admin.services.index', '▧', 'Services', 'admin.services.*') !!}
+        @can('settings.manage'){!! $nav('admin.settings.edit', '⚙', 'Paramètres', 'admin.settings.*') !!}@endcan
       @endcan
     </nav>
-    <div class="sidefoot"><b>SIGACI</b><br>{{ config('sigaci.nom') }}</div>
+    <div class="sidefoot"><b>{{ config('sigaci.sigle') }}</b><br>{{ config('sigaci.nom') }}</div>
   </aside>
   <main>
     <div class="top">
@@ -61,7 +62,7 @@
       @if ($errors->any())<div class="alert err">@foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
       @yield('content')
     </div>
-    <div class="footer">SIGACI · {{ config('sigaci.nom') }}</div>
+    <div class="footer">{{ config('sigaci.sigle') }} · {{ config('sigaci.nom') }}</div>
   </main>
 </div>
 </body>

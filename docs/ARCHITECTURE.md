@@ -84,6 +84,7 @@ Définis dans `App\Providers\AppServiceProvider` (Gates).
 | Gérer les consommables (entrées, sorties, références) | informaticien, gestionnaire de stock |
 | Gérer les comptes | admin d'institution (son institution), admin national (tous) |
 | Gérer les institutions | admin national |
+| Paramètres de l'application (nom affiché, description) | admin national |
 
 Un agent voit le matériel qui lui est affecté et peut signaler une panne dessus.
 

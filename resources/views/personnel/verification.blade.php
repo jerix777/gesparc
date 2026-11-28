@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Vérification d’une décision – SIGACI</title><link rel="stylesheet" href="{{ asset('css/app.css') }}"></head>
+<title>Vérification d’une décision – {{ config('sigaci.sigle') }}</title><link rel="stylesheet" href="{{ asset('css/app.css') }}"></head>
 <body><div class="login"><div class="box">
   <h1>Vérification d’une décision</h1>
   @if ($l)
-    <div class="alert ok">Décision authentique, enregistrée dans SIGACI.</div>
+    <div class="alert ok">Décision authentique, enregistrée dans {{ config('sigaci.sigle') }}.</div>
     <dl class="kv">
       <dt>Document</dt><dd>Autorisation d’absence n° {{ $l->numero }}</dd>
       <dt>Institution</dt><dd>{{ $l->institution->nom }}</dd>
