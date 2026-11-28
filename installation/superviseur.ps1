@@ -83,13 +83,31 @@ function DemarrerWeb {
         }
     } else {
         if (-not (PortOuvert $cfg.port_web)) {
-            Ecrire "Démarrage d'Apache (Laragon, port $($cfg.port_web))"
-            Lancer $cfg.httpd '' (Split-Path (Split-Path $cfg.httpd))
+            if ($cfg.httpd_conf) {
+                # Instance Apache propre à SIGACI (port 80 indisponible) : programmes de Laragon, configuration de SIGACI.
+                Ecrire "Démarrage d'Apache (instance SIGACI, port $($cfg.port_web))"
+                Lancer $cfg.httpd "-f `"$($cfg.httpd_conf)`"" (Split-Path (Split-Path $cfg.httpd))
+            } else {
+                Ecrire "Démarrage d'Apache (Laragon, port $($cfg.port_web))"
+                Lancer $cfg.httpd '' (Split-Path (Split-Path $cfg.httpd))
+            }
         }
     }
 }
 
 function ArreterWeb {
+    if ($cfg.pile -eq 'laragon' -and $cfg.httpd_conf) {
+        # Seulement l'instance de SIGACI (et ses processus fils), jamais l'Apache de Laragon.
+        $tous = @(Get-CimInstance Win32_Process -Filter "Name='httpd.exe'" -ErrorAction SilentlyContinue)
+        $parents = @($tous | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($cfg.httpd_conf) })
+        $ids = @($parents.ProcessId) + @($tous | Where-Object { $_.ParentProcessId -in $parents.ProcessId } | ForEach-Object ProcessId)
+        if ($ids.Count) {
+            Ecrire 'Arrêt de httpd.exe (instance SIGACI)'
+            $ids | Select-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+        }
+        Start-Sleep -Seconds 1
+        return
+    }
     $exes = if ($cfg.pile -eq 'autonome') { @($cfg.php_cgi, $cfg.caddy) } else { @($cfg.httpd) }
     foreach ($e in $exes) {
         $p = ProcessusDe $e

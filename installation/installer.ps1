@@ -24,6 +24,12 @@
 .EXAMPLE
     .\installer.ps1 -Domaine sigaci.tpi-bouake.ci -AdminEmail informatique@tpi-bouake.ci
 .EXAMPLE
+    .\installer.ps1 -Reprise D:\GESTION_DU_PERSONNEL.html -Institution TPI-BKE
+    Installe (ou met à jour) puis reprend le personnel, le matériel et les toners de l'application d'origine.
+.EXAMPLE
+    .\installer.ps1 -Restaurer D:\sigaci_2026-11-27_0230.zip
+    Installe puis remplace la base par la sauvegarde d'un autre serveur SIGACI (.zip Windows ou .sql.gz Linux).
+.EXAMPLE
     .\installer.ps1 -Mode demo
     Démonstration (SQLite, comptes de test) sans serveur web ni service.
 #>
@@ -41,6 +47,9 @@ param(
     [switch] $Https,
     [switch] $Demarrer,
     [switch] $ModeTest,
+    [string[]] $Reprise,
+    [string] $Institution = 'TPI-BKE',
+    [string] $Restaurer,
     [string] $Journal
 )
 
@@ -82,6 +91,9 @@ function Echec([string] $m) {
     Write-Host ''
     Write-Host "  [ERREUR] $m" -ForegroundColor Red
     if ($script:Maintenance) { Write-Host "  SIGACI est resté en maintenance. Après correction, relancez l'installateur." -ForegroundColor Red }
+    if ($script:Identifiants -and $script:Identifiants.Count) {
+        Write-Host "  Identifiants déjà créés (non recréés à la relance) : $($script:FichierIdentifiants)" -ForegroundColor Yellow
+    }
     if ($script:Transcription) { try { Stop-Transcript | Out-Null } catch { } }
     exit 1
 }
@@ -194,6 +206,22 @@ function VersionPhp([string] $exe) { return (& $exe -r 'echo PHP_VERSION_ID;') -
 function EstAdmin {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
     return (New-Object Security.Principal.WindowsPrincipal $id).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+# ------------------------------------------------------------------ données à reprendre
+
+# Chemins résolus avant la demande de droits, qui relance l'installateur depuis C:\Windows\System32.
+# -Reprise accepte plusieurs fichiers : a.html,b.html (séparés par des virgules).
+$Reprise = @($Reprise | ForEach-Object { $_ -split '[|,]' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } |
+    ForEach-Object { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($_) })
+if ($Restaurer) { $Restaurer = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Restaurer) }
+foreach ($f in @($Reprise) + @($Restaurer)) {
+    if ($f -and -not (Test-Path -LiteralPath $f -PathType Leaf)) { Echec "Fichier introuvable : $f" }
+}
+if ($Reprise.Count) { $PSBoundParameters['Reprise'] = $Reprise -join '|' }
+if ($Restaurer) {
+    $PSBoundParameters['Restaurer'] = $Restaurer
+    if (-not $Production) { Echec '-Restaurer ne concerne que la production (base MariaDB/MySQL).' }
 }
 
 # ------------------------------------------------------------------ droits administrateur
@@ -328,6 +356,39 @@ if ($Etat) {
         $cfg.url = 'http://localhost:8000'
         Ok 'Démonstration : PHP en ligne de commande, base SQLite'
     }
+}
+
+# Laragon : si le port 80 est tenu par un autre programme qu'Apache (redirection netsh portproxy, IIS, Skype...)
+# ou si -PortWeb le demande, SIGACI a sa propre instance Apache (programmes de Laragon, configuration dans
+# $Base\apache). Laragon et le programme qui tient le port 80 ne sont pas modifiés.
+if ($Production -and $cfg.pile -eq 'laragon') {
+    $portDedie = 0
+    if ($PSBoundParameters.ContainsKey('PortWeb')) { $portDedie = $PortWeb }
+    elseif ($cfg.httpd_conf) { $portDedie = [int]$cfg.port_web }
+    else {
+        $occupant = Get-NetTCPConnection -State Listen -LocalPort 80 -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($occupant) {
+            $proc = Get-Process -Id $occupant.OwningProcess -ErrorAction SilentlyContinue
+            if (-not $proc -or $proc.ProcessName -ne 'httpd') {
+                $nomOccupant = if ($proc) { $proc.ProcessName } else { "processus $($occupant.OwningProcess)" }
+                if ($proc -and $proc.ProcessName -eq 'svchost') {
+                    $svc = Get-CimInstance Win32_Service -Filter "ProcessId=$($proc.Id)" -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($svc) { $nomOccupant = "le service Windows « $($svc.DisplayName) »" }
+                    if ($svc.Name -eq 'iphlpsvc') { $nomOccupant += ' (redirection de ports netsh portproxy)' }
+                }
+                $portDedie = PremierPortLibre @(8080, 8000, 8081, 8088)
+                Attention "Port 80 occupé par $nomOccupant : SIGACI aura son propre serveur Apache sur le port $portDedie (ni Laragon ni ce programme ne sont modifiés)."
+            }
+        }
+    }
+    if ($portDedie -and $portDedie -ne 80) {
+        $cfg.port_web = $portDedie
+        $cfg.httpd_conf = Join-Path $Base 'apache\httpd.conf'
+    } else {
+        $cfg.port_web = 80
+        $cfg.httpd_conf = $null
+    }
+    if (-not $Https) { $cfg.url = "http://$($cfg.domaine)$(if ($cfg.port_web -ne 80) { ":$($cfg.port_web)" })" }
 }
 
 # ------------------------------------------------------------------ 2. PHP
@@ -504,6 +565,21 @@ try {
 
 Etape 'Configuration (.env)'
 $Identifiants = [ordered]@{}
+$FichierIdentifiants = Join-Path $Base 'identifiants.txt'
+# Chaque identifiant est écrit dès sa création : un échec plus loin (serveur web, pare-feu...) ne doit pas le perdre,
+# les relances suivantes ne le recréant pas.
+function NoterIdentifiant([string] $cle, [string] $valeur) {
+    $nouveau = -not $Identifiants.Count
+    $Identifiants[$cle] = $valeur
+    $lignes = @()
+    if ($nouveau) { $lignes += @('', "SIGACI - identifiants créés le $(Get-Date -Format 'dd/MM/yyyy HH:mm'). Conservez-les en lieu sûr, puis supprimez ce fichier.") }
+    $lignes += "${cle} : $valeur"
+    Add-Content -Path $FichierIdentifiants -Value $lignes -Encoding UTF8
+    if ($nouveau -and $Production -and -not $ModeTest) {
+        # Lecture réservée aux administrateurs et au système (SID : indépendant de la langue de Windows).
+        & icacls $FichierIdentifiants /inheritance:r /grant:r '*S-1-5-32-544:F' '*S-1-5-18:F' | Out-Null
+    }
+}
 if (Test-Path (Join-Path $App '.env')) {
     Exec $Php $Outils completer-env $App
 } else {
@@ -515,7 +591,7 @@ if (Test-Path (Join-Path $App '.env')) {
         $env:SIGACI_DB_NOM = 'sigaci'
         $env:SIGACI_DB_UTILISATEUR = 'sigaci'
         $env:SIGACI_DB_MDP = NouveauMotDePasse
-        $Identifiants['Base de données SIGACI'] = "utilisateur sigaci / $($env:SIGACI_DB_MDP) (port $($cfg.port_bd))"
+        NoterIdentifiant 'Base de données SIGACI' "utilisateur sigaci / $($env:SIGACI_DB_MDP) (port $($cfg.port_bd))"
     }
     Exec $Php $Outils preparer-env $App
     Remove-Item Env:SIGACI_DB_MDP -ErrorAction SilentlyContinue
@@ -542,7 +618,7 @@ if ($Production) {
             $argsInit = @("--datadir=$(Join-Path $Base 'data')", "--password=$rootMdp", "--port=$($cfg.port_bd)")
             if ($cfg.mysql_service) { $argsInit += "--service=$($cfg.mysql_service)" }
             Exec (Join-Path $Base 'mariadb\bin\mariadb-install-db.exe') @argsInit
-            $Identifiants['MariaDB (administrateur)'] = "root / $rootMdp (port $($cfg.port_bd))"
+            NoterIdentifiant 'MariaDB (administrateur)' "root / $rootMdp (port $($cfg.port_bd))"
             Ok 'Base MariaDB initialisée'
         }
         if (-not (Test-Path $cfg.caddy)) {
@@ -602,8 +678,81 @@ $site {
     </Directory>
 </VirtualHost>
 "@
-        [IO.File]::WriteAllText($cfg.vhost, $vhost)
-        Ok "Site Apache configuré : $($cfg.vhost)"
+        if (-not $cfg.httpd_conf) {
+            [IO.File]::WriteAllText($cfg.vhost, $vhost)
+            Ok "Site Apache configuré : $($cfg.vhost)"
+        } else {
+            # Instance dédiée : le site de SIGACI est retiré de Laragon (il n'y servirait plus).
+            if ($cfg.vhost -and (Test-Path $cfg.vhost)) { Remove-Item $cfg.vhost -Force }
+            $srv = (Split-Path (Split-Path $cfg.httpd)) -replace '\\', '/'
+            $phpDir = (Split-Path $cfg.php) -replace '\\', '/'
+            $base = $Base -replace '\\', '/'
+            New-Item -ItemType Directory -Force (Join-Path $Base 'apache') | Out-Null
+            # Mêmes modules que l'Apache de Laragon (sauf SSL, inutile ici), PHP de SIGACI.
+            $modules = Select-String -Path (Join-Path $srv 'conf\httpd.conf') -Pattern '^\s*LoadModule\s+(\S+)\s+(\S+)' |
+                Where-Object { $_.Matches[0].Groups[1].Value -notin 'ssl_module', 'socache_shmcb_module' } |
+                ForEach-Object { $_.Line.Trim() }
+            $dll = Get-ChildItem (Split-Path $cfg.php) -Filter 'php*apache2_4.dll' -ErrorAction SilentlyContinue | Select-Object -First 1
+            $fcgid = Join-Path $LaragonDir 'etc\apache2\modules\mod_fcgid.so'
+            if ($dll) {
+                $moteurPhp = @"
+LoadModule php_module "$phpDir/$($dll.Name)"
+PHPIniDir "$phpDir"
+AddType application/x-httpd-php .php
+"@
+            } elseif ((Test-Path $fcgid) -and (Test-Path (Join-Path (Split-Path $cfg.php) 'php-cgi.exe'))) {
+                $moteurPhp = @"
+LoadModule fcgid_module "$($fcgid -replace '\\', '/')"
+FcgidInitialEnv PHPRC "$phpDir"
+FcgidInitialEnv SystemRoot "C:/Windows"
+FcgidInitialEnv TEMP "C:/Windows/Temp"
+FcgidInitialEnv PHP_FCGI_MAX_REQUESTS 0
+FcgidMaxRequestsPerProcess 0
+FcgidIOTimeout 600
+FcgidMaxRequestLen 81310720
+<Files ~ "\.php$">
+    AddHandler fcgid-script .php
+    Options +ExecCGI
+    FcgidWrapper "$phpDir/php-cgi.exe" .php
+</Files>
+"@
+            } else { Echec "Ni php8apache2_4.dll ni php-cgi.exe dans $phpDir : instance Apache de SIGACI impossible." }
+            $conf = @"
+# SIGACI - instance Apache dédiée, générée par installer.ps1 : réécrite à chaque mise à jour, ne pas modifier.
+# Elle utilise les programmes d'Apache de Laragon sans toucher à sa configuration.
+ServerRoot "$srv"
+Listen $($cfg.port_web)
+$($modules -join "`n")
+$moteurPhp
+ServerName $($cfg.domaine):$($cfg.port_web)
+PidFile "$base/apache/httpd.pid"
+ErrorLog "$base/journaux/apache-erreurs.log"
+LogLevel warn
+LogFormat "%h %l %u %t \"%r\" %>s %b" commun
+CustomLog "$base/journaux/apache-acces.log" commun
+TypesConfig conf/mime.types
+DirectoryIndex index.php index.html
+<Directory />
+    AllowOverride None
+    Require all denied
+</Directory>
+DocumentRoot "$racine"
+<Directory "$racine">
+    Options FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+"@
+            [IO.File]::WriteAllText($cfg.httpd_conf, $conf)
+            # httpd -t écrit sur la sortie d'erreur même quand tout va bien.
+            $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+            $env:Path = "$(Split-Path $cfg.php);$env:Path"
+            $verif = (& $cfg.httpd -t -f $cfg.httpd_conf 2>&1 | Out-String).Trim()
+            $codeVerif = $LASTEXITCODE
+            $ErrorActionPreference = $eap
+            if ($codeVerif -ne 0) { Echec "Configuration Apache de SIGACI invalide : $verif" }
+            Ok "Instance Apache de SIGACI configurée : port $($cfg.port_web) ($($cfg.httpd_conf))"
+        }
     }
 
     # État et outils, puis démarrage par le superviseur.
@@ -660,6 +809,21 @@ $site {
 Etape 'Tables de la base'
 Push-Location $App
 try {
+    if ($Restaurer) {
+        # Une relance avec la même sauvegarde ne l'applique pas une seconde fois (elle effacerait les saisies faites depuis).
+        $empreinte = (Get-FileHash -LiteralPath $Restaurer -Algorithm SHA256).Hash
+        if ($cfg.restauration_empreinte -eq $empreinte) {
+            Info "Sauvegarde déjà restaurée le $($cfg.restauration_le) : ignorée ($(Split-Path $Restaurer -Leaf))"
+        } else {
+            Info "Restauration de $Restaurer (remplace les données actuelles$(if ($MiseAJour) { ', sauvegardées à l''étape précédente' }))"
+            Exec $Php $Outils restaurer-bd $App $Restaurer
+            Info 'Comptes et mots de passe : ceux du serveur d''origine de la sauvegarde.'
+            $cfg.restauration_fichier = $Restaurer
+            $cfg.restauration_empreinte = $empreinte
+            $cfg.restauration_le = (Get-Date).ToString('s')   # noté dans installation.json en fin de passage
+        }
+    }
+
     & $Php $Outils bd-initialisee $App
     $nouvelleBase = ($LASTEXITCODE -ne 0)
     Exec $Php artisan config:clear --quiet
@@ -678,8 +842,20 @@ try {
         & $Php $Outils creer-admin $App
         $codeAdmin = $LASTEXITCODE
         Remove-Item Env:SIGACI_ADMIN_MDP, Env:SIGACI_ADMIN_EMAIL
-        if ($codeAdmin -eq 0) { $Identifiants['Administrateur national SIGACI'] = "$AdminEmail / $mdpAdmin" }
+        if ($codeAdmin -eq 0) { NoterIdentifiant 'Administrateur national SIGACI' "$AdminEmail / $mdpAdmin" }
         elseif ($codeAdmin -ne 3) { Echec "Création de l'administrateur national impossible." }
+    }
+
+    if ($Reprise.Count) {
+        # Personnel, matériel et toners des fichiers HTML de l'application d'origine (relançable sans doublon).
+        $commandes = (& $Php artisan list --raw 2>$null) -join "`n"
+        if ($commandes -notmatch '(?m)^sigaci:reprise-origine\b') {
+            Attention 'Cette version de SIGACI ne connaît pas la reprise (sigaci:reprise-origine) : données non importées.'
+        } else {
+            Info "Reprise des données d'origine dans l'institution $($Institution.ToUpper())"
+            Exec $Php artisan sigaci:reprise-origine @Reprise "--institution=$Institution" --creer-institution --no-interaction
+            Ok 'Données de l''application d''origine reprises'
+        }
     }
 
     if ($Production) {
@@ -733,17 +909,11 @@ $cfg.mis_a_jour_le = (Get-Date).ToString('s')
 if (-not $cfg.installe_le) { $cfg.installe_le = $cfg.mis_a_jour_le }
 [IO.File]::WriteAllText($FichierEtat, ($cfg | ConvertTo-Json -Depth 4))
 
-$FichierIdentifiants = Join-Path $Base 'identifiants.txt'
 if ($Identifiants.Count) {
-    $texte = @("SIGACI - identifiants créés le $(Get-Date -Format 'dd/MM/yyyy HH:mm'). Conservez-les en lieu sûr, puis supprimez ce fichier.", "Adresse : $($cfg.url)")
+    # Les identifiants y sont déjà (écrits à leur création) : on ajoute les adresses, connues seulement maintenant.
+    $texte = @("Adresse : $($cfg.url)")
     if ($AdressesLan) { $texte += "Depuis les autres postes : $($AdressesLan -join '  ou  ')" }
-    $texte += ''
-    foreach ($k in $Identifiants.Keys) { $texte += "${k} : $($Identifiants[$k])" }
-    Add-Content -Path $FichierIdentifiants -Value (($texte -join "`r`n") + "`r`n") -Encoding UTF8
-    if ($Production -and -not $ModeTest) {
-        # Lecture réservée aux administrateurs et au système (SID : indépendant de la langue de Windows).
-        & icacls $FichierIdentifiants /inheritance:r /grant:r '*S-1-5-32-544:F' '*S-1-5-18:F' | Out-Null
-    }
+    Add-Content -Path $FichierIdentifiants -Value $texte -Encoding UTF8
 }
 
 Write-Host ''

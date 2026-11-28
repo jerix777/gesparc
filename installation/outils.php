@@ -18,6 +18,8 @@
  *                                               (SIGACI_ADMIN_EMAIL, SIGACI_ADMIN_MDP) ; code 3 = déjà présent
  *   php outils.php configurer-php <php.ini> <laragon|autonome>
  *                                               Active les extensions requises (et règle PHP pour la pile autonome)
+ *   php outils.php restaurer-bd <dossier-app> <fichier>
+ *                                               Remplace la base par une sauvegarde (.zip Windows, .sql.gz, .sql)
  */
 
 const PHP_MIN = 80300;
@@ -36,6 +38,7 @@ try {
         'completer-env' => completerEnv($arg),
         'creer-admin' => creerAdmin($arg),
         'configurer-php' => configurerPhp($arg, $argv[3] ?? 'laragon'),
+        'restaurer-bd' => restaurerBd($arg, $argv[3] ?? ''),
         default => usage(),
     });
 } catch (Throwable $e) {
@@ -45,7 +48,7 @@ try {
 
 function usage(): int
 {
-    fwrite(STDERR, "Usage : php outils.php verifier|composer|preparer-env|creer-bd|bd-initialisee|lire-env ...\n");
+    fwrite(STDERR, "Usage : php outils.php verifier|composer|preparer-env|creer-bd|bd-initialisee|lire-env|restaurer-bd ...\n");
 
     return 2;
 }
@@ -509,4 +512,136 @@ function bdInitialisee(string $app): int
     } catch (Throwable) {
         return 1;
     }
+}
+
+/**
+ * Remplace le contenu de la base par une sauvegarde : .zip de l'installateur Windows (sigaci_*.zip),
+ * .sql.gz de sigaci-sauvegarde (Linux) ou .sql de mysqldump. Le fichier est vérifié avant de toucher à la base.
+ */
+function restaurerBd(string $app, string $fichier): int
+{
+    $app = rtrim($app, '/\\');
+    $env = lireEnv($app);
+    if (($env['DB_CONNECTION'] ?? 'sqlite') !== 'mysql' && ($env['DB_CONNECTION'] ?? '') !== 'mariadb') {
+        erreur('La restauration ne concerne que les bases MySQL/MariaDB (installation de production).');
+
+        return 1;
+    }
+    if (! is_file($fichier) || ! is_readable($fichier)) {
+        erreur("Sauvegarde introuvable : $fichier");
+
+        return 1;
+    }
+
+    $temp = null;
+    try {
+        $sql = fichierSql($fichier, $temp);
+        // Vérification : c'est bien une sauvegarde SIGACI (tables des migrations et des équipements).
+        $tables = [];
+        $h = ouvrirSql($sql);
+        while (($l = fgets($h)) !== false) {
+            if (preg_match('/^CREATE TABLE `(migrations|equipments)`/', $l, $m)) {
+                $tables[$m[1]] = true;
+            }
+        }
+        fclose($h);
+        if (count($tables) < 2) {
+            erreur("$fichier n'est pas une sauvegarde de SIGACI (tables migrations et equipments absentes) : base inchangée.");
+
+            return 1;
+        }
+
+        $pdo = pdoMysql($env['DB_HOST'] ?? '127.0.0.1', $env['DB_PORT'] ?? '3306', $env['DB_USERNAME'] ?? '', $env['DB_PASSWORD'] ?? '', $env['DB_DATABASE'] ?? '');
+        $pdo->exec('SET NAMES utf8mb4');
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+        // Tables créées par une version plus récente que la sauvegarde : supprimées, les migrations les recréent.
+        foreach ($pdo->query('SHOW FULL TABLES')->fetchAll(PDO::FETCH_NUM) as [$nom, $type]) {
+            $pdo->exec(($type === 'VIEW' ? 'DROP VIEW' : 'DROP TABLE').' IF EXISTS `'.str_replace('`', '``', $nom).'`');
+        }
+
+        $h = ouvrirSql($sql);
+        $delim = ';';
+        $tampon = '';
+        $n = 0;
+        while (($l = fgets($h)) !== false) {
+            $t = rtrim($l, "\r\n");
+            if ($tampon === '') {
+                // Commentaires, lignes vides et ligne « sandbox » propre au client de MariaDB 11.
+                if (trim($t) === '' || str_starts_with($t, '--') || str_starts_with($t, '/*M!999999')) {
+                    continue;
+                }
+                if (preg_match('/^DELIMITER\s+(\S+)/i', $t, $m)) {
+                    $delim = $m[1];
+
+                    continue;
+                }
+            }
+            $tampon .= $l;
+            if (str_ends_with(rtrim($t), $delim)) {
+                $instr = substr(rtrim($tampon), 0, -strlen($delim));
+                if (trim($instr) !== '') {
+                    $pdo->exec($instr);
+                    $n++;
+                }
+                $tampon = '';
+            }
+        }
+        fclose($h);
+        if (trim($tampon) !== '') {
+            $pdo->exec($tampon);
+        }
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+        $nb = (int) $pdo->query('SELECT COUNT(*) FROM equipments')->fetchColumn();
+        ok("Sauvegarde restaurée : $n instructions, $nb équipement(s)");
+
+        return 0;
+    } finally {
+        if ($temp && is_file($temp)) {
+            unlink($temp);
+        }
+    }
+}
+
+/** Chemin du SQL à lire : extrait d'un .zip si besoin (dans $temp, à supprimer ensuite). */
+function fichierSql(string $fichier, ?string &$temp): string
+{
+    $debut = (string) file_get_contents($fichier, false, null, 0, 4);
+    if (! str_starts_with($debut, "PK\x03\x04")) {
+        return $fichier;
+    }
+    if (! class_exists(ZipArchive::class)) {
+        throw new RuntimeException("Extension PHP zip absente : décompressez la sauvegarde et indiquez le fichier .sql.");
+    }
+    $zip = new ZipArchive;
+    if ($zip->open($fichier) !== true) {
+        throw new RuntimeException("Archive illisible : $fichier");
+    }
+    try {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $nom = (string) $zip->getNameIndex($i);
+            if (preg_match('/\.sql(\.gz)?$/i', $nom)) {
+                $temp = tempnam(sys_get_temp_dir(), 'sigaci-restauration-');
+                if (file_put_contents($temp, $zip->getStream($nom)) === false) {
+                    throw new RuntimeException("Extraction impossible de $nom");
+                }
+
+                return $temp;
+            }
+        }
+    } finally {
+        $zip->close();
+    }
+    throw new RuntimeException("Aucun fichier .sql dans l'archive $fichier");
+}
+
+/** @return resource flux texte, décompressé à la volée pour un .gz */
+function ouvrirSql(string $fichier)
+{
+    $gz = (string) file_get_contents($fichier, false, null, 0, 2) === "\x1f\x8b";
+    $h = fopen(($gz ? 'compress.zlib://' : '').$fichier, 'rb');
+    if (! $h) {
+        throw new RuntimeException("Lecture impossible : $fichier");
+    }
+
+    return $h;
 }

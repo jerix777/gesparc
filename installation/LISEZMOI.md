@@ -20,6 +20,9 @@ L'installateur choisit la pile logicielle :
 - **Laragon installé** : il utilise le PHP chargé par Apache dans Laragon (8.3 ou plus), son Apache et son MySQL.
   Il active les extensions PHP nécessaires (copie de `php.ini` en `php.ini.avant-sigaci`) et ajoute le site
   `C:\laragon\etc\apache2\sites-enabled\sigaci.conf`.
+  Si le port 80 est pris par un autre programme qu'Apache (redirection `netsh portproxy` pour WSL ou Docker, IIS…),
+  SIGACI reçoit sa **propre instance Apache sur le port 8080** : mêmes programmes que Laragon, configuration dans
+  `C:\SIGACI\apache\httpd.conf`. Ni Laragon ni le programme qui tient le port 80 ne sont modifiés.
 - **Laragon absent** (pile autonome) : il télécharge depuis les sites officiels, en vérifiant chaque empreinte SHA-256 :
   - PHP 8.3, et au besoin les bibliothèques Visual C++ de Microsoft (signature vérifiée) ;
   - MariaDB 11.4, installé comme service Windows `SIGACIMariaDB` ;
@@ -69,9 +72,12 @@ routeur (ou la box) pour que les adresses imprimées dans les codes QR restent v
 | `-AdminEmail informatique@tpi-bouake.ci` | compte administrateur national (défaut : `admin@sigaci.local`) |
 | `-Pile autonome` | ignore Laragon (`-Pile laragon` : exige Laragon) |
 | `-Base D:\SIGACI` | autre dossier d'installation |
-| `-PortWeb 8080` | autre port web (pile autonome) |
+| `-PortWeb 8080` | autre port web (avec Laragon : instance Apache propre à SIGACI ; `-PortWeb 80` revient au site Laragon) |
 | `-Https` | HTTPS automatique avec Caddy (domaine public joignable depuis Internet) |
 | `-Mode demo` | démonstration : SQLite, comptes de test, sans service (`-Demarrer` lance le serveur) |
+| `-Reprise D:\GESTION_DU_PERSONNEL.html` | importe les données de l'application d'origine (voir plus bas) |
+| `-Institution TPI-BKE` | institution qui reçoit la reprise (défaut : `TPI-BKE`, créée si besoin) |
+| `-Restaurer D:\sigaci_2026-11-27_0230.zip` | remplace la base par la sauvegarde d'un autre serveur SIGACI (voir plus bas) |
 
 Mots de passe imposés au lieu de mots de passe générés : variables `SIGACI_ADMIN_MDP` et, pour un MySQL de
 Laragon protégé, `SIGACI_DB_ROOT_MDP`. Définissez-les dans une **console administrateur**, car la demande de
@@ -133,9 +139,28 @@ connexion (le mot de passe généré n'est noté que dans `identifiants.txt`).
 
 ## Reprendre les données de l'application d'origine
 
-Après l'installation, la commande `sigaci:reprise-origine` importe le personnel, le matériel et les références de
-toner contenus dans les fichiers HTML de l'ancienne application (détails dans le `README.md` de SIGACI). Dans une
-console, depuis le dossier de l'application :
+L'installateur n'importe aucune donnée par lui-même : une installation neuve est vide (types d'équipement et
+administrateur national seulement). Sous Windows, deux options le font pendant l'installation ou une mise à jour :
+
+```bat
+installer.cmd -Reprise D:\GESTION_DU_PERSONNEL.html
+installer.cmd -Restaurer D:\sigaci_2026-11-27_0230.zip
+```
+
+- **`-Reprise`** : personnel (services et bureaux), unités centrales, écrans, imprimantes, scanners et références de
+  toner des fichiers HTML de l'ancienne application, dans l'institution `-Institution` (défaut `TPI-BKE`, créée si
+  besoin). Plusieurs fichiers : `-Reprise a.html,b.html`. Relancer ne crée pas de doublons. Les lignes non reprises
+  sont listées dans le journal.
+- **`-Restaurer`** : transfère les données d'un autre serveur SIGACI. Indiquez sa sauvegarde : `sigaci_*.zip` de
+  `C:\SIGACI\sauvegardes` (Windows) ou `sigaci_*.sql.gz` de `/var/backups/sigaci` (Linux). Le fichier est vérifié,
+  puis **remplace toutes les données** (une mise à jour sauvegarde d'abord la base actuelle) ; les migrations
+  l'amènent ensuite à la version installée. Comptes et mots de passe deviennent ceux du serveur d'origine. Une
+  relance avec la même sauvegarde ne la réapplique pas.
+
+Les deux options peuvent être combinées (restauration d'abord, reprise ensuite). Copiez les fichiers sur le serveur
+en dehors de `C:\SIGACI\app` : ils contiennent des données personnelles.
+
+La reprise peut aussi se lancer à la main, depuis le dossier de l'application :
 
 ```powershell
 cd C:\SIGACI\app
@@ -156,7 +181,7 @@ relancée sans créer de doublons. Ces fichiers contiennent des données personn
 | Téléchargement impossible | Vérifiez l'accès à Internet (proxy éventuel), puis relancez |
 | Création de la base impossible avec le compte root de Laragon | Le root de Laragon a un mot de passe : console administrateur, `$env:SIGACI_DB_ROOT_MDP='...'`, puis l'installateur |
 | SIGACI ne répond pas | Consultez `C:\SIGACI\journaux\superviseur.log` et `C:\SIGACI\app\storage\logs` |
-| Le port 80 est déjà pris (IIS…) | Pile autonome : le port 8080 est choisi automatiquement ; ou `-PortWeb` |
+| Le port 80 est déjà pris (IIS, redirection de ports…) | Le port 8080 est choisi automatiquement (Laragon : instance Apache propre à SIGACI) ; ou `-PortWeb` |
 | Les autres postes n'atteignent pas SIGACI | Essayez l'adresse IP affichée plutôt que le nom ; vérifiez qu'un antivirus avec pare-feu (Kaspersky, ESET…) ne bloque pas le port web |
 
 Le journal complet de chaque passage est dans `C:\SIGACI\journaux\installation-*.log`.
