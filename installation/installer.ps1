@@ -539,12 +539,22 @@ if (-not (Test-Path (Join-Path $App 'artisan'))) {
     }
     G fetch --quiet origin $cfg.branche
     if ($LASTEXITCODE -ne 0) { Echec 'Impossible de joindre le dépôt GitHub (accès Internet ?).' }
-    $avant = (G rev-parse --short HEAD 2>$null)
+    # Pas encore de commit (installation ZIP rattachée au dépôt) : rev-parse échoue, sans être fatal.
+    $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $avant = (G rev-parse --short HEAD 2>&1 | Where-Object { $_ -is [string] })
+    $ErrorActionPreference = $eap
+    if ($LASTEXITCODE -ne 0) { $avant = $null }
     G checkout --quiet -B $cfg.branche "origin/$($cfg.branche)" --force
     G reset --quiet --hard "origin/$($cfg.branche)"
     if ($patch) {
-        G apply --check $patch 2>$null
-        if ($LASTEXITCODE -eq 0) { G apply $patch; Ok 'Modifications locales réappliquées' }
+        # Les vérifications écrivent sur stderr quand elles échouent : sous PowerShell 5.1 avec 'Stop',
+        # ce serait une erreur fatale (installation bloquée en maintenance). On ne lit que le code de retour.
+        $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        G apply --check $patch 2>&1 | Out-Null; $applicable = ($LASTEXITCODE -eq 0)
+        G apply --reverse --check $patch 2>&1 | Out-Null; $dejaIncluses = ($LASTEXITCODE -eq 0)
+        $ErrorActionPreference = $eap
+        if ($applicable) { G apply $patch; Ok 'Modifications locales réappliquées' }
+        elseif ($dejaIncluses) { Ok 'Modifications locales déjà incluses dans la nouvelle version' }
         else { Attention "Modifications locales incompatibles avec la nouvelle version : non réappliquées (voir $patch)." }
     }
     $apres = (G rev-parse --short HEAD)
@@ -848,7 +858,9 @@ try {
 
     if ($Reprise.Count) {
         # Personnel, matériel et toners des fichiers HTML de l'application d'origine (relançable sans doublon).
-        $commandes = (& $Php artisan list --raw 2>$null) -join "`n"
+        $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        $commandes = (& $Php artisan list --raw 2>&1 | Where-Object { $_ -is [string] }) -join "`n"
+        $ErrorActionPreference = $eap
         if ($commandes -notmatch '(?m)^sigaci:reprise-origine\b') {
             Attention 'Cette version de SIGACI ne connaît pas la reprise (sigaci:reprise-origine) : données non importées.'
         } else {
